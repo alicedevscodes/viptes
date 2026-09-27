@@ -1,0 +1,124 @@
+import json
+import os
+import sys
+from base64 import b64decode
+
+import requests
+from dotenv import load_dotenv
+
+
+def get_blacklist():
+    try:
+        aa = "aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL25heWExNTAzL3dhcm5pbmcvbWFpbi9ibGdjYXN0Lmpzb24="
+        bb = b64decode(aa).decode("utf-8")
+        res = requests.get(bb)
+        if res.status_code == 200:
+            return json.loads(res.text)
+    except Exception as e:
+        sys.exit(1)
+
+
+load_dotenv()
+
+HELPABLE = {}
+
+DICT_BUTTON = {}
+
+COPY_ID = {}
+
+
+WAJIB_JOIN = ["asupanmujeh", "aliceajakok", "alicedevspro"]
+USENAME_OWNER = os.environ.get("USENAME_OWNER", "@aliceajako")
+API_ID = int(os.environ.get("API_ID", 39310745))
+MAX_BOT = int(os.environ.get("MAX_BOT", 10))
+
+API_HASH = os.environ.get("API_HASH", "701402147029318491542a1fb6362017")
+
+BOT_TOKEN = os.environ.get(
+    "BOT_TOKEN", "8716594575:AAF9BUuEa51b8yZbDwUmDvmL426nhkWV-2o"
+)
+
+BOT_ID = BOT_TOKEN.split(":")[0]
+
+API_GEMINI = os.environ.get("API_GEMINI", "AIzaSyAd3ZutuccpTvN-7K-5BLu4l0c1G4WuS_Y")
+
+API_BOTCHAX = os.environ.get("API_BOTCHAX", "alicecodes")
+
+API_MAELYN = os.environ.get("API_MAELYN", "sk_ms_0449cc4c34ca6239e5bc153d88e7c3f285d3a1aeea3a844c")
+
+BOT_NAME = os.environ.get("BOT_NAME", "DevsBot")
+
+DB_NAME = os.environ.get("DB_NAME", "DevsBot")
+
+URL_LOGO = os.environ.get("URL_LOGO", "https://u.pone.rs/tlszrldr.jpg")
+
+BLACKLIST_GCAST = get_blacklist()
+
+SUDO_OWNERS = list(
+    map(
+        int,
+        os.environ.get(
+            "SUDO_OWNERS",
+            "8659619672 2114557671",
+        ).split(),
+    )
+)
+DEVS = list(
+    map(
+        int,
+        os.environ.get(
+            "DEVS",
+            "8659619672 2114557671",
+        ).split(),
+    )
+)
+
+AKSES_DEPLOY = list(
+    map(int, os.environ.get("AKSES_DEPLOY", "8659619672 2114557671").split())
+)
+
+OWNER_ID = int(os.environ.get("OWNER_ID", 8659619672))
+
+LOG_SELLER = int(os.environ.get("LOG_SELLER", -1004483673933))
+
+LOG_BACKUP = int(os.environ.get("LOG_BACKUP", -1004483673933))
+
+VIDEO_URL = "https://files.catbox.moe/wercpg.mp4"
+
+SPOTIFY_CLIENT_ID = os.environ.get(
+    "SPOTIFY_CLIENT_ID", "e09ff7a19b204b62b6048a73bd605fe6"
+)
+SPOTIFY_CLIENT_SECRET = os.environ.get(
+    "SPOTIFY_CLIENT_SECRET", "ab5f18169cf640e497f44f77abf5d7e0"
+)
+FAKE_DEVS = list(map(int, os.environ.get("FAKE_DEVS", "1054295664").split()))
+
+CASAKU_BASE_URL = os.environ.get("https://api.casaku.id")
+
+CASAKU_LICENSE_KEY = os.environ.get("cashify_7bf619705a7a6c56521d4dddb35597ac454c34a117c4106caadac40d305e70aa")
+
+# ID QRIS yang sudah terdaftar di Casaku
+CASAKU_QRIS_ID = os.environ.get("03823ea7-c975-45bd-b66e-32130f14e9e9")
+
+# Package ID Casaku
+CASAKU_PACKAGE_IDS = os.environ.get("id.dana")
+
+CODEQR = os.environ.get(
+    "CODEQR",
+    "00020101021126570011ID.DANA.WWW011893600915382885122502098288512250303UMI51440014ID.CO.QRIS.WWW0215ID10253733543370303UMI5204581253033605802ID5912Citra Geprek6015Kabupaten Dairi6105222146304BB48"
+    )
+    
+
+
+KYNAN = [8659619672, 2114557671]
+if OWNER_ID not in SUDO_OWNERS:
+    SUDO_OWNERS.append(OWNER_ID)
+if OWNER_ID not in DEVS:
+    DEVS.append(OWNER_ID)
+if OWNER_ID not in FAKE_DEVS:
+    FAKE_DEVS.append(OWNER_ID)
+for P in FAKE_DEVS:
+    if P not in DEVS:
+        DEVS.append(P)
+    if P not in SUDO_OWNERS:
+        SUDO_OWNERS.append(P)

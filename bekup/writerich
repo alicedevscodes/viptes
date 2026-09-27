@@ -1,0 +1,52 @@
+def write(self) -> "raw.base.InputRichMessage":
+        if self.html:
+            return raw.types.InputRichMessageHTML(
+                html=self.html,
+                rtl=self.is_rtl,
+                noautolink=self.skip_entity_detection
+            )
+        elif self.markdown:
+            return raw.types.InputRichMessageMarkdown(
+                markdown=self.markdown,
+                rtl=self.is_rtl,
+                noautolink=self.skip_entity_detection
+            )
+        elif self.blocks:
+            # Convert structured blocks into Rich HTML representation
+            html_parts = []
+            for block in self.blocks:
+                type_name = type(block).__name__
+                if "Paragraph" in type_name or "SectionHeading" in type_name or "Footer" in type_name:
+                    text_val = getattr(block, "text", "")
+                    html_parts.append(f"<p>{text_val}</p>")
+                elif "ExpandableBlockQuotation" in type_name:
+                    text_val = getattr(block, "text", "")
+                    html_parts.append(f"<blockquote expandable>{text_val}</blockquote>")
+                elif "BlockQuotation" in type_name:
+                    text_val = getattr(block, "text", "")
+                    html_parts.append(f"<blockquote>{text_val}</blockquote>")
+                elif "Table" in type_name:
+                    rows_html = []
+                    for row in getattr(block, "cells", []):
+                        cells_html = "".join([f"<td>{getattr(c, 'text', str(c))}</td>" for c in row])
+                        rows_html.append(f"<tr>{cells_html}</tr>")
+                    html_parts.append(f"<table>{''.join(rows_html)}</table>")
+                elif "Buttons" in type_name:
+                    for row in getattr(block, "buttons", []):
+                        for btn in row:
+                            if getattr(btn, "url", None):
+                                html_parts.append(f'<button url="{btn.url}">{btn.text}</button>')
+                            elif getattr(btn, "copy_text", None):
+                                html_parts.append(f'<button copy_text="{btn.copy_text}">{btn.text}</button>')
+                            else:
+                                cb_data = getattr(btn, "callback_data", "")
+                                html_parts.append(f'<button callback_data="{cb_data}">{btn.text}</button>')
+
+            combined_html = "\n".join(html_parts)
+            return raw.types.InputRichMessageHTML(
+                html=combined_html,
+                rtl=self.is_rtl,
+                noautolink=self.skip_entity_detection
+            )
+        else:
+            raise ValueError("You must provide markdown, html, or blocks in the rich message")

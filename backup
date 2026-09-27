@@ -1,0 +1,45 @@
+import inspect
+import pyrogram.types as types
+from pyrogram import Client
+
+nama_class = [
+    "InputRichMessage",
+    "RichBlockParagraph",
+    "RichBlockSectionHeading",
+    "RichBlockPreformatted",
+    "RichBlockFooter",
+    "RichBlockDivider",
+    "RichBlockMathematicalExpression",
+    "RichBlockAnchor",
+    "RichBlockList",
+    "RichBlockListItem",
+    "RichBlockTable",
+    "RichBlockTableCell",
+    "RichBlockDetails",
+    "RichBlockBlockQuotation",
+    "RichBlockPullQuotation",
+    "RichBlockPhoto",
+    "RichBlockVideo",
+    "RichBlockAnimation",
+    "RichBlockAudio",
+    "RichBlockVoiceNote",
+    "RichBlockButtons",
+    "RichMessageButton",
+    "RichTextBold",
+]
+
+print("=== send_rich_message ===")
+print(inspect.signature(Client.send_rich_message))
+
+print("=== Rich types ===")
+for nama in nama_class:
+    obj = getattr(types, nama, None)
+
+    if obj is None:
+        print(f"❌ {nama}: TIDAK ADA")
+        continue
+
+    try:
+        print(f"✅ {nama}{inspect.signature(obj)}")
+    except (TypeError, ValueError):
+        print(f"✅ {nama}: ada, signature tidak dapat dibaca")
