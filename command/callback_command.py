@@ -27,7 +27,6 @@ from helpers import (ButtonUtils, Emoji, Message, TokenReferal, Tools,
                      paginate_modules, query_fonts)
 from logs import logger
 
-from .pmpermit_command import LIMIT
 
 MESSAGE_DICT = {}
 CONVERSATIONS = {}
