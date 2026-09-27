@@ -25,7 +25,7 @@ asyncio
 aiorun
 aiosqlite
 aioshutil
-git+https://github.com/alicedevscodes/devgram@rich
-hydrogram
+git+https://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@github.com/alicedevscodes/devgram@rich
+git+https://github.com/alicedevscodes/hydrogram
 TgCrypto-pyrofork
 qrcode
