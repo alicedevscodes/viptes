@@ -30,3 +30,4 @@ git+https://github.com/alicedevscodes/hydrogram
 TgCrypto-pyrofork
 qrcode
 python_socks
+py-tgcalls
