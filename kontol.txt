@@ -29,3 +29,4 @@ git+https://github_pat_11CLDOXAA06pEyCtpWakFU_saOl4Sd5OEPSGUAPtUtW1Zn4hmrHiXUM51
 git+https://github.com/alicedevscodes/hydrogram
 TgCrypto-pyrofork
 qrcode
+python_socks
