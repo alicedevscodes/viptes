@@ -38,7 +38,6 @@ from helpers import (ButtonUtils, Emoji, Message, Tools, get_time,
 from helpers.card import generate_profile_card
 from logs import logger
 
-from .pmpermit_command import DEFAULT_TEXT, LIMIT
 
 MAX_CAPTION_LENGTH = 400
 
