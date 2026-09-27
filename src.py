@@ -164,7 +164,7 @@ async def start_main_bot():
     await bot.add_reseller()
     logger.info("✅ Main bot started successfully.")
     total_bots = len(navy._ubot)
-    message = "🔥**Bot berhasil diaktifkan**🔥\n" f"✅ **Total User: {total_bots}**"
+    message = "🔥**Bot AutoPaymentVip Active**🔥\n**"
     await dB.set_var(bot.id, "total_users", total_bots)
     try:
         await bot.send_message(OWNER_ID, f"<blockquote>{message}</blockquote>")
@@ -173,11 +173,11 @@ async def start_main_bot():
 
 
 async def start_userbots():
-    logger.info("🔄 Starting userbots...")
+    logger.info("🔄 Starting bot...")
     userbots = await dB.get_userbots()
     tasks = [asyncio.create_task(start_ubot(ubot)) for ubot in userbots]
     await asyncio.gather(*tasks, return_exceptions=False)
-    logger.info("✅ All userbots started successfully.")
+    logger.info("✅ Bot AutoPaymentVip started successfully.")
 
 
 async def task_2():
