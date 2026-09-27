@@ -50,7 +50,6 @@ from .start_command import (button_bot, getid_bot, incoming_message, lapor_bug,
                             outgoing_reply, request_bot, setads_bot,
                             setimg_start, start_home)
 from .status_command import cek_status_akun, close_kb
-from .sudoers_command import addsudo_cmd, delsudo_cmd, sudolist_cmd
 from .token_command import (referal_command, token_cmd, tools_referral,
                             tools_token, use_referral)
 from .update_command import (backup, cb_evaluasi_bot, cb_evalusi, cb_gitpull2,
