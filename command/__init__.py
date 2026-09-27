@@ -18,8 +18,6 @@ from .callback_command import (apkinfocb, bola_date, bola_matches,
                                rest_donghua, select_model, sosmed_callback,
                                tools_userbot, viewchord, viewlyric)
 from .copy_command import copyall2_cmd, copyall_cmd
-from .fake_command import (fstik_cmd, ftype_cmd, fvideo_cmd, fvoice_cmd,
-                           mail_cmd, task_cmd)
 from .gruplog_command import (ADD_ME, DELETED, EDITED, KICK_ME, LOGS_GROUP,
                               REPLY, logs_cmd)
 from .help_command import basic_plugins, pro_plugins
