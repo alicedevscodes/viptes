@@ -1,5 +1,4 @@
 from .addubot_command import mari_buat_userbot, setExpiredUser
-from .autoreply_command import autoreply_cmd, mentioned_trigger
 from .broadcast_command import (addbcdb_cmd, addbl_cmd, bc_cmd, bcerror_cmd,
                                 cancel_cmd, delbcdb_cmd, delbl_cmd, gcast_cmd,
                                 listbcdb_cmd, listbl_cmd, sendinline_cmd,
