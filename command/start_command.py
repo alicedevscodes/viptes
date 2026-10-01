@@ -104,36 +104,36 @@ async def welcome_rich_table(
     user_mention = _format_user_mention(message.from_user)
     rich = InputRichMessage(
         blocks=[
-            heading(["✨ Hi",   user_mention, 3]),
-            paragraph(f"Saya adalah Bot Auto Payment"),
-            paragraph("Memudahkan kalian untuk membeli channel VIP dan Userbot"),
+            heading(["✨ Hi\n",   user_mention, 3]),
+            paragraph(f"Ini adalah contoh bot auto payment"),
+            paragraph("Metode QRIS payment gateway casaku.id"),
             divider(),
             details(
-                  paragraph("📂 VIP"),
+                  paragraph("📂 Dagangan Loe"),
             table(
                 [
-                    [cell("💎 Channel VIP", is_header=True, align="center")],
-                    [cell("🎬 10 Ribu Media", align="center")],
-                    [cell("Rp. 2000,-", align="center")],
+                    [cell("🍜 Seblak", is_header=True, align="center")],
+                    [cell("Pedas ", align="center")],
+                    [cell("Rp. 9.000.000,-", align="center")],
                 ],
             ),
          ),
             details(
-                  paragraph("📂 Userbot"),
+                  paragraph("📂 Dagangan Loe Juga"),
             table(
                 [
-                    [cell("💎 Plan Pro", is_header=True), cell("🧩 Plan Basic", is_header=True)],
-                    [cell("🎮 76 Fitur"), cell("🎮 36 Fitur")],
-                    [cell("✅ Curi Foto Timer"), cell("❌ Tidak Tersedia")],
-                    [cell("✅ Curi Media CH Private"), cell("❌ Tidak Tersedia")],
+                    [cell("🍜 Mie Ayam", is_header=True), cell("☕ Kopi Hitam", is_header=True)],
+                    [cell("Tanpa ayam"), cell("Tanpa gelas")],
+                    [cell("✅ Ga enak"), cell("❌ Ga enak")],
+                    [cell("Rp. 9.000.000"), cell("Rp. 1 Miliyar")],
                 ],
                 bordered=True,
                 striped=True,
             ),
         ),
             details(
-                "📂 Klik untuk penjelasan userbot",
-                 paragraph("🤖 Userbot adalah asisten telegram cerdas yang akan membantu Anda dalam keseharian menggunakan telegram dengan mudah dan cepat, dan melebihi pengguna telegram biasa"),
+                "📂 Klik untuk penjelasan contoh",
+                 paragraph("Ini Contoh Bot Auto Payment QRIS CASAKU.ID"),
             ),
             divider(),
             table(
