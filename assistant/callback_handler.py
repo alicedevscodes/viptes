@@ -28,7 +28,7 @@ async def _(client, message):
     try:
         text = message.text
         if text in [
-            "💎 Beli VIP/USERBOT",
+            "Beli Seblak Bang",
             "✨ Pembuatan Ulang Userbot",
             "✅ Lanjutkan Buat Userbot",
         ]:
