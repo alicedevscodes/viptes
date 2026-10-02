@@ -16,7 +16,7 @@ from pyrogram.types import (InlineKeyboardButton, InlineKeyboardMarkup,
 from pytz import timezone
 
 from clients import bot
-from config import AKSES_DEPLOY, CASAKU_LICENSE_KEY, CASAKU_PACKAGE_IDS, LOG_SELLER, OWNER_ID
+from config import AKSES_DEPLOY, CASAKU_LICENSE_KEY, CASAKU_PACKAGE_IDS, CASAKU_QRIS_ID, LOG_SELLER, OWNER_ID
 from database import dB
 from helpers import Basic_Effect, ButtonUtils, Emoji, Message, Tools
 from logs import logger
