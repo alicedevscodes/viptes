@@ -722,30 +722,30 @@ class Tools:
               
     @staticmethod
     async def upload_qris(qris_path, amount):
+        import httpx
         try:
-            response = await Tools.fetch.post(
-                "https://api.casaku.id/api/generate/v2/qris",
-                headers={
-                    "x-license-key": CASAKU_LICENSE_KEY,
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "qr_id": CASAKU_QRIS_ID,
-                    "amount": int(amount),
-                    "useUniqueCode": False,
-                    "packageIds": CASAKU_PACKAGE_IDS,
-                    "expiredInMinutes": 10,
-                    "qrType": "dynamic",
-                    "paymentMethod": "qris",
-                    "useQris": True,
-                },
-            )
-            print("CASAKU STATUS:", response.status_code)
-            print("CASAKU BODY:", response.text)
+            async with httpx.AsyncClient(timeout=20) as client:
+                response = await client.post(
+                    "https://api.casaku.id/api/generate/v2/qris",
+                    headers={
+                        "x-license-key": CASAKU_LICENSE_KEY,
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "qr_id": CASAKU_QRIS_ID,
+                        "amount": int(amount),
+                        "useUniqueCode": False,
+                        "packageIds": CASAKU_PACKAGE_IDS,
+                        "expiredInMinutes": 10,
+                        "qrType": "dynamic",
+                        "paymentMethod": "qris",
+                        "useQris": True,
+                    },
+                )
+            print("CASAKU:", response.status_code, response.text)
             return response.json()["data"]["payment_url"]
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            print("CASAKU ERROR:", repr(e))
             return None
           
     @staticmethod
