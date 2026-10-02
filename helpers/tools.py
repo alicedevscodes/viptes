@@ -717,7 +717,32 @@ class Tools:
             async with session.post(base_url, data=form_data) as response:
                 response.raise_for_status()
                 return (await response.text()).strip()
-
+              
+    @staticmethod
+    async def upload_qris(qris_path, amount):
+        try:
+            response = await Tools.fetch.post(
+                "https://api.casaku.id/api/generate/v2/qris",
+                headers={
+                    "x-license-key": CASAKU_LICENSE_KEY,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "qr_id": CASAKU_QRIS_ID,
+                    "amount": int(amount),
+                    "useUniqueCode": False,
+                    "packageIds": CASAKU_PACKAGE_IDS,  # harus list
+                    "expiredInMinutes": 10,
+                    "qrType": "dynamic",
+                    "paymentMethod": "qris",
+                    "useQris": True,
+                },
+            )
+            return response.json()["data"]["payment_url"]
+        except Exception as e:
+            print(e)  # sesuaikan dengan except lama Anda
+            return None
+          
     @staticmethod
     async def interact_with(message):
         await asyncio.sleep(1)
