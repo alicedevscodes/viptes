@@ -109,7 +109,7 @@ async def welcome_rich_table(
             paragraph("Metode QRIS payment gateway casaku.id"),
             divider(),
             details(
-                  paragraph("📂 Dagangan Loe"),
+                  paragraph("📂 SEBLAK MENCRET"),
             table(
                 [
                     [cell("🍜 Seblak", is_header=True, align="center")],
@@ -119,7 +119,7 @@ async def welcome_rich_table(
             ),
          ),
             details(
-                  paragraph("📂 Dagangan Loe Juga"),
+                  paragraph("📂 MIE AYAM MENCRET"),
             table(
                 [
                     [cell("🍜 Mie Ayam", is_header=True), cell("☕ Kopi Hitam", is_header=True)],
@@ -133,7 +133,7 @@ async def welcome_rich_table(
         ),
             details(
                 "📂 Klik untuk penjelasan contoh",
-                 paragraph("Ini Contoh Bot Auto Payment QRIS CASAKU.ID"),
+                 paragraph("Ini Contoh Bot Auto Payment QRIS CASAKU.ID\nMENCRET LOE PADA"),
             ),
             divider(),
             table(
