@@ -35,7 +35,7 @@ def digit():
 async def casaku_generate(amount: int):
     async with httpx.AsyncClient(timeout=20) as c:
         r = await c.post(
-            "https://api.casaku.id/api/generate/v2/qris",
+            "https://api.casaku.id/api/generate/qris",
             headers={"x-license-key": CASAKU_LICENSE_KEY},
             json={
                 "qr_id": CASAKU_QRIS_ID,
