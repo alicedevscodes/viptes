@@ -30,7 +30,7 @@ from pyrogram.errors import FloodWait, MessageNotModified
 from pyrogram.types import ChatPrivileges, MessageEntity
 
 from clients import bot
-from config import API_BOTCHAX, BOT_ID, BOT_NAME, CODEQR, URL_LOGO
+from config import API_BOTCHAX, BOT_ID, BOT_NAME, CODEQR, URL_LOGO, CASAKU_LICENSE_KEY, CASAKU_PACKAGE_IDS
 from database import dB
 from logs import logger
 
