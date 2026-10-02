@@ -32,6 +32,39 @@ waktu_jkt = timezone("Asia/Jakarta")
 def digit():
     return "".join(random.choice("0123456789") for _ in range(2))
 
+async def casaku_generate(amount: int):
+    async with httpx.AsyncClient(timeout=20) as c:
+        r = await c.post(
+            "https://api.casaku.id/api/generate/v2/qris",
+            headers={"x-license-key": CASAKU_LICENSE_KEY},
+            json={
+                "qr_id": CASAKU_QRIS_ID,
+                "amount": int(amount),
+                "useUniqueCode": False,
+                "packageIds": CASAKU_PACKAGE_IDS,
+                "expiredInMinutes": 10,
+                "qrType": "dynamic",
+                "paymentMethod": "qris",
+                "useQris": True,
+            },
+        )
+    print("CASAKU GENERATE:", r.status_code, r.text)
+    r.raise_for_status()
+    data = r.json()["data"]
+    if not str(data.get("payment_url", "")).startswith("https://"):
+        raise ValueError("payment_url kosong/tidak valid")
+    return data
+
+async def casaku_status(transaction_id: str):
+    async with httpx.AsyncClient(timeout=20) as c:
+        r = await c.post(
+            "https://api.casaku.id/api/generate/check-status",
+            headers={"x-license-key": CASAKU_LICENSE_KEY},
+            json={"transactionId": transaction_id},
+        )
+    return r.json()["data"]["status"]
+
+
 
 async def add_transaction(user_id, month, plan):
     await dB.set_var(user_id, "plan", plan)
