@@ -183,6 +183,9 @@ async def confirm_pay(client, callback_query):
                 ]
             ),
         )
+        if not qris_url:
+            return await callback_query.answer("Gagal membuat QRIS, coba lagi.", show_alert=True)
+          
         bukti = await client.ask(
             user_id,
             f'<b>🧾 Silakan kirimkan bukti mencret adna yang sudah Anda buang dicloset</b>',
