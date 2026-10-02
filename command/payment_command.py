@@ -111,7 +111,7 @@ async def kurang_tambah(client, callback_query):
         pass
 
 
-async def confirm_pay(client, callback_query, expired_minutes=True):
+async def confirm_pay(client, callback_query):
     await callback_query.answer()
     data = callback_query.data.split()
     month = int(data[1])
@@ -156,7 +156,7 @@ async def confirm_pay(client, callback_query, expired_minutes=True):
         now = datetime.now(waktu_jkt)
         expire_time = now + timedelta(minutes=10)
         formatted_time = expire_time.strftime("%H:%M")
-        qris_url = (await confirm_pay(int(total_price), expired_minutes=10))["payment_url"]  # <-- satu-satunya yang diubah
+        qris_url = (await confirm_pay(int(total_price)))["payment_url"]  # <-- satu-satunya yang diubah
 
         sent_msg = await callback_query.message.reply_photo(
             qris_path,
