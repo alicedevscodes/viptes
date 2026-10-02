@@ -156,7 +156,7 @@ async def confirm_pay(client, callback_query):
         now = datetime.now(waktu_jkt)
         expire_time = now + timedelta(minutes=10)
         formatted_time = expire_time.strftime("%H:%M")
-        qris_url = await Tools.upload_thumb(qris_path)
+        qris_url = (await generate_qris(int(total_price), expired_minutes=10))["payment_url"]  # <-- satu-satunya yang diubah
 
         sent_msg = await callback_query.message.reply_photo(
             qris_path,
@@ -182,7 +182,6 @@ async def confirm_pay(client, callback_query):
                 ]
             ),
         )
-
         bukti = await client.ask(
             user_id,
             f'<b>🧾 Silakan kirimkan bukti mencret adna yang sudah Anda buang dicloset</b>',
@@ -232,7 +231,7 @@ async def confirm_pay(client, callback_query):
                     del transactions[user_id]
                 break
             try:
-                response = await Tools.fetch.get(
+                response = await Tools.fetch.post(
                     f"https://casaku.com/api/generate/qris/{CASAKU_PACKAGE_IDS}/{CASAKU_LICENSE_KEY}"
                 )
                 result = response.json().post("data", [])[0]
