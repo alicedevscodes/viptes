@@ -107,15 +107,9 @@ Sistem pembayaran melalui QRIS Oromatis.</b></blockquote>"""
     @staticmethod
     async def policy_message() -> str:
         """Generate enhanced policy and terms message"""
-        return f"""<b>🧾DIBACA NJING!</b>
-💎 Layanan VIP kami sangat murah dan tersedia 10.000 media!, dan terkunci!
-
-🤖 Layanan Userbot kami sangat efisien dan murah, bisa kalian pakai untuk
-menciri media kami dengan menggunakan Userbot ini, Selain itu userbot ini
-memiliki fitur save media sekali liat dari orang lain. dan beberapa fitur
-keren seperti Chat GPT, AI Gambar, Fitur animasi dan fitur fitur keren lainnya.
-📝 Persetujuan
-• Dengan membayar, member dianggap telah membaca dan menyetujui seluruh ketentuan yang berlaku.
+        return f"""<b>🧾INI CONTOH BOT AUTO PAY!</b>
+💎  Seblak Premium adalah bla bla bla anu mencret loe pada
+Ini contoh ya njing.
 """
 
     @staticmethod
@@ -127,17 +121,15 @@ keren seperti Chat GPT, AI Gambar, Fitur animasi dan fitur fitur keren lainnya.
         return f"""
 <blockquote><bSilahkan Masukan Nominal Pembayaran.
 
-Harga VIP: <code>{Message.format_rupiah(harga)}</code>
-Total harga: <code>{Message.format_rupiah(total)}</code>
+Harga Seblak: <code>{Message.format_rupiah(harga)}</code>
+Total Mencret: <code>{Message.format_rupiah(total)}</code>
 
 💡 Klik tombol Saya Ingin Membeli lalu klik tombol konfirmasi.</b></blockquote>
 """
 
     @staticmethod
     def chosePlan():
-        return """💎 VIP & Userbot
-- Nikmati grup vip murah kami 
-- Nikmati akses fitur userbot kami 
-dengan salah satu fitur save media sekali liat dari pengirim
+        return """💎 Seblak Premium
+Adalah bla bla bla anu mencret loe pada
 
-Sistem pembayaran otomatis"""
+Sistem pembayaran otomatis via CASAKU.ID"""
