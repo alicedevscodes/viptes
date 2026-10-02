@@ -184,14 +184,21 @@ async def confirm_pay(client, callback_query):
         fee = int(digit())
         total_price = base_price + fee
 
+    try:
+        trx = await casaku_generate(total_price)
+    except Exception as e:
+        logger.error(f"CASAKU GENERATE ERROR: {e}")
+        return await client.send_message(user_id, "<b>Gagal membuat QRIS, coba lagi nanti.</b>"
+        )
+        trx_id = trx["transactionId"]
+        qris_url = trx["payment_url"]
+
         qris_path = f"qris_{user_id}.png"
         Tools.qris_dinamis(str(total_price), qris_path)
 
         now = datetime.now(waktu_jkt)
         expire_time = now + timedelta(minutes=10)
         formatted_time = expire_time.strftime("%H:%M")
-        qris_url = await Tools.upload_qris(qris_path, int(total_price))
-
         sent_msg = await callback_query.message.reply_photo(
             qris_path,
             caption=f"""
@@ -216,9 +223,7 @@ async def confirm_pay(client, callback_query):
                 ]
             ),
         )
-        if not qris_url:
-            return await callback_query.answer("Gagal membuat QRIS, coba lagi.", show_alert=True)
-          
+        
         bukti = await client.ask(
             user_id,
             f'<b>🧾 Silakan kirimkan bukti mencret adna yang sudah Anda buang dicloset</b>',
@@ -268,16 +273,9 @@ async def confirm_pay(client, callback_query):
                     del transactions[user_id]
                 break
             try:
-                response = await Tools.fetch.post(
-                    f"https://casaku.com/api/generate/qris/{CASAKU_PACKAGE_IDS}/{CASAKU_LICENSE_KEY}"
-                )
-                result = response.json().post("data", [])[0]
+                status = await casaku_status(trx_id)
 
-                if (
-                    result
-                    and int(result["amount"]) == total_price
-                    and not transactions[user_id]["done"]
-                ):
+                if status == "paid" and not transactions[user_id]["done"]:
                     transactions[user_id]["done"] = True
 
                     await callback_query.message.reply(
