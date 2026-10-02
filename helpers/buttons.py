@@ -232,10 +232,10 @@ class ButtonUtils:
         """Generate start menu keyboard."""
         common_buttons = [
         [
-          (("💎 Beli VIP/USERBOT"), ButtonStyle.PRIMARY, "5258330865674494479"),
+          (("Beli Seblak Bang"), ButtonStyle.PRIMARY, "5258330865674494479"),
         ],
         [
-          (("🤖 Contoh Kelebihan Userbot"), ButtonStyle.SUCCESS, "5258330865674494479"),
+          (("Tombol Custom DLL"), ButtonStyle.SUCCESS, "5258330865674494479"),
         ],
           
     ]
@@ -413,11 +413,11 @@ class ButtonUtils:
             [
                 [
                     (
-                      (("💎 VIP"), 
+                      (("Seblak Pedas"), 
                       f"planusers basic", ButtonStyle.PRIMARY, "5258330865674494479")
                     ), 
                     (
-                      (("💻 USERBOT"),
+                      (("Seblak Non Pedas"),
                      f"planusers is_pro", ButtonStyle.PRIMARY, "5258330865674494479")
                     ),
                 ],             
