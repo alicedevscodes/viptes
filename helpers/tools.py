@@ -731,16 +731,19 @@ class Tools:
                     "qr_id": CASAKU_QRIS_ID,
                     "amount": int(amount),
                     "useUniqueCode": False,
-                    "packageIds": CASAKU_PACKAGE_IDS,  # harus list
+                    "packageIds": CASAKU_PACKAGE_IDS,
                     "expiredInMinutes": 10,
                     "qrType": "dynamic",
                     "paymentMethod": "qris",
                     "useQris": True,
                 },
             )
+            print("CASAKU STATUS:", response.status_code)
+            print("CASAKU BODY:", response.text)
             return response.json()["data"]["payment_url"]
         except Exception as e:
-            print(e)  # sesuaikan dengan except lama Anda
+            import traceback
+            traceback.print_exc()
             return None
           
     @staticmethod
