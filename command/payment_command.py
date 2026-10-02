@@ -78,9 +78,9 @@ async def kurang_tambah(client, callback_query):
     BULAN = int(callback_query.data.split()[1])
     PLAN = str(callback_query.data.split()[3])
     if PLAN == "basic": #vip campuran
-        HARGA = 2000
+        HARGA = 90000000
     elif PLAN == "is_pro": #ubot
-        HARGA = 10000
+        HARGA = 20000000
     try:
         if QUERY == "kurang":
             if BULAN > 1:
@@ -161,10 +161,10 @@ async def confirm_pay(client, callback_query):
         sent_msg = await callback_query.message.reply_photo(
             qris_path,
             caption=f"""
-<b>💳 SCAN QRIS UNTUK MEMBELI</b>
+<b>💳 SCAN QRIS UNTUK MEMBELI SEBLAK</b>
 <blockquote><b>
-💵 Harga: `{Message.format_rupiah(base_price)}`
-💰 Total Pembayaran: `{Message.format_rupiah(total_price)}`
+💵 Harga Seblak: `{Message.format_rupiah(base_price)}`
+💰 Total Mencret: `{Message.format_rupiah(total_price)}`
 
 
 ⚠️ Setelah melakukanpembayaran kirimkan bukti transfer dibot ini.
@@ -185,7 +185,7 @@ async def confirm_pay(client, callback_query):
 
         bukti = await client.ask(
             user_id,
-            f'<b>🧾 Silakan kirimkan bukti pembayaran yang sudah Anda lakukan</b>',
+            f'<b>🧾 Silakan kirimkan bukti mencret adna yang sudah Anda buang dicloset</b>',
             filters=filters.photo,
         )
         caption = bukti.caption or ''
