@@ -175,37 +175,41 @@ async def confirm_pay(client, callback_query):
         await asyncio.sleep(7)
         await loading.delete()
         await client.send_message(
-                   LOG_SELLER,
-                   f"""
-<b>Someone Has Pay Your Product</b>
-""",)
+            LOG_SELLER,
+            "<b>Someone Has Pay Your Product</b>",
+        )
         item_name = f"Sewa Userbot {PLAN} {month} Months"
         base_price = amount
         fee = int(digit())
         total_price = base_price + fee
 
-    try:
-        trx = await casaku_generate(total_price)
-    except Exception as e:
-        logger.error(f"CASAKU GENERATE ERROR: {e}")
-        return await client.send_message(user_id, "<b>Gagal membuat QRIS, coba lagi nanti.</b>"
-        )
+        # 1. Buat transaksi di Casaku DULU (kalau gagal, berhenti di sini)
+        try:
+            trx = await casaku_generate(total_price)
+        except Exception as e:
+            logger.error(f"CASAKU GENERATE ERROR: {e}")
+            return await client.send_message(
+                user_id, "<b>Gagal membuat QRIS, coba lagi nanti.</b>"
+            )
         trx_id = trx["transactionId"]
         qris_url = trx["payment_url"]
 
+        # 2. Buat gambar QRIS (sama seperti kode asli)
         qris_path = f"qris_{user_id}.png"
         Tools.qris_dinamis(str(total_price), qris_path)
 
         now = datetime.now(waktu_jkt)
         expire_time = now + timedelta(minutes=10)
         formatted_time = expire_time.strftime("%H:%M")
+
+        # 3. Kirim QRIS
         sent_msg = await callback_query.message.reply_photo(
             qris_path,
             caption=f"""
-<b>💳 SCAN QRIS UNTUK MEMBELI SEBLAK</b>
+<b>💳 SCAN QRIS UNTUK MEMBELI</b>
 <blockquote><b>
-💵 Harga Seblak: `{Message.format_rupiah(base_price)}`
-💰 Total Mencret: `{Message.format_rupiah(total_price)}`
+💵 Harga: `{Message.format_rupiah(base_price)}`
+💰 Total Pembayaran: `{Message.format_rupiah(total_price)}`
 
 
 ⚠️ Setelah melakukanpembayaran kirimkan bukti transfer dibot ini.
@@ -223,34 +227,8 @@ async def confirm_pay(client, callback_query):
                 ]
             ),
         )
-        
-        bukti = await client.ask(
-            user_id,
-            f'<b>🧾 Silakan kirimkan bukti mencret adna yang sudah Anda buang dicloset</b>',
-            filters=filters.photo,
-        )
-        caption = bukti.caption or ''
-        
-        try:
-            await bukti.copy(
-                LOG_SELLER,
-                caption=f'\n\nPembayaran: {plan}\nHarga: {Message.format_rupiah(base_price)}',
-                reply_markup=ikb(
-                        [
-                            [
-                                ("💎 Akses VIP", f"vip {callback_query.from_user.id} {client.me.username}", ButtonStyle.PRIMARY),
-                                ("💻 Akses Ubot", f"ubot {callback_query.from_user.id} {client.me.username} {plan} {month}", ButtonStyle.SUCCESS),
-                            ],
-                        ]
-                    )
-                )
-            await callback_query.message.reply("<b>✅ Bukti pembayaran sukses dikirim, tunggu sebentar link akan dikirim.</b>")
-            await client.send_message(LOG_SELLER, f"Telah membayar di @{client.me.username}")
-            if os.path.exists(qris_path):
-                os.remove(qris_path)
-        except Exception as e:
-            print(f"Error saat mengirim bukti pembayaran: {e}")
-          
+
+        # 4. Daftarkan transaksi SEBELUM menunggu bukti (supaya tombol Cancel jalan)
         transactions[user_id] = {
             "qris_path": qris_path,
             "expire_time": expire_time,
@@ -258,11 +236,45 @@ async def confirm_pay(client, callback_query):
             "done": False,
         }
 
+        # 5. Minta bukti di background, supaya polling tidak ikut tertahan
+        async def minta_bukti():
+            try:
+                bukti = await client.ask(
+                    user_id,
+                    "<b>🧾 Silakan kirimkan bukti pembayaran yang sudah Anda lakukan</b>",
+                    filters=filters.photo,
+                    timeout=600,
+                )
+                await bukti.copy(
+                    LOG_SELLER,
+                    caption=f"\n\nPembayaran: {plan}\nHarga: {Message.format_rupiah(base_price)}",
+                    reply_markup=ikb(
+                        [
+                            [
+                                ("💎 Akses VIP", f"vip {user_id} {client.me.username}", ButtonStyle.PRIMARY),
+                                ("💻 Akses Ubot", f"ubot {user_id} {client.me.username} {plan} {month}", ButtonStyle.SUCCESS),
+                            ],
+                        ]
+                    ),
+                )
+                await callback_query.message.reply(
+                    "<b>✅ Bukti pembayaran sukses dikirim, tunggu sebentar link akan dikirim.</b>"
+                )
+                await client.send_message(LOG_SELLER, f"Telah membayar di @{client.me.username}")
+            except Exception as e:
+                print(f"Error saat mengirim bukti pembayaran: {e}")
+
+        asyncio.create_task(minta_bukti())
+
+        # 6. Polling status ke Casaku
         while True:
-            await asyncio.sleep(10)
+            await asyncio.sleep(5)
+
+            if user_id not in transactions:  # dibatalkan user
+                break
 
             if datetime.now(waktu_jkt) > expire_time:
-                if user_id in transactions and not transactions[user_id]["done"]:
+                if not transactions[user_id]["done"]:
                     await callback_query.message.reply(
                         "<b><i>Jika admin lama membalas.sabar nunggu njing!.</i></b>"
                     )
@@ -271,7 +283,10 @@ async def confirm_pay(client, callback_query):
                         message_ids=transactions[user_id]["message_id"],
                     )
                     del transactions[user_id]
+                if os.path.exists(qris_path):
+                    os.remove(qris_path)
                 break
+
             try:
                 status = await casaku_status(trx_id)
 
@@ -301,6 +316,8 @@ async def confirm_pay(client, callback_query):
                         message_ids=transactions[user_id]["message_id"],
                     )
                     del transactions[user_id]
+                    if os.path.exists(qris_path):
+                        os.remove(qris_path)
 
                     await add_transaction(user_id, month, plan)
                     if user_id not in AKSES_DEPLOY:
@@ -319,7 +336,7 @@ async def confirm_pay(client, callback_query):
             except Exception as e:
                 print(f"Error checking payment: {e}")
 
-    except Exception as er:
+    except Exception:
         logger.error(f"ERROR: {traceback.format_exc()}")
         logger.error(f"ERROR: {sys.exc_info()[-1].tb_lineno}")
         return await client.send_message(
