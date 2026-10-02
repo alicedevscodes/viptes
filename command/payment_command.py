@@ -156,7 +156,7 @@ async def confirm_pay(client, callback_query):
         now = datetime.now(waktu_jkt)
         expire_time = now + timedelta(minutes=10)
         formatted_time = expire_time.strftime("%H:%M")
-        qris_url = (await generate_qris(int(total_price), expired_minutes=10))["payment_url"]  # <-- satu-satunya yang diubah
+        qris_url = (await confirm_pay(int(total_price), expired_minutes=10))["payment_url"]  # <-- satu-satunya yang diubah
 
         sent_msg = await callback_query.message.reply_photo(
             qris_path,
