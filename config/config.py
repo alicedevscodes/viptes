@@ -95,7 +95,7 @@ FAKE_DEVS = list(map(int, os.environ.get("FAKE_DEVS", "1054295664").split()))
 
 CASAKU_BASE_URL = os.environ.get("https://api.casaku.id")
 
-CASAKU_LICENSE_KEY = os.environ.get("cashify_7bf619705a7a6c56521d4dddb35597ac454c34a117c4106caadac40d305e70aa")
+CASAKU_LICENSE_KEY = os.environ.get("casaku_78adb4546721e2a2219547a7bf0218db00ce8005b111867ef84ba563da4617b9")
 
 # ID QRIS yang sudah terdaftar di Casaku
 CASAKU_QRIS_ID = os.environ.get("03823ea7-c975-45bd-b66e-32130f14e9e9")
