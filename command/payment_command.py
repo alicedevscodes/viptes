@@ -111,7 +111,7 @@ async def kurang_tambah(client, callback_query):
         pass
 
 
-async def confirm_pay(client, callback_query):
+async def confirm_pay(client, callback_query, expired_minutes=True):
     await callback_query.answer()
     data = callback_query.data.split()
     month = int(data[1])
