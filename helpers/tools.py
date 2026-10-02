@@ -726,7 +726,7 @@ class Tools:
         try:
             async with httpx.AsyncClient(timeout=20) as client:
                 response = await client.post(
-                    "https://api.casaku.id/api/generate/v2/qris",
+                    "https://api.casaku.id/api/generate/qris",
                     headers={
                         "x-license-key": CASAKU_LICENSE_KEY,
                         "Content-Type": "application/json",
