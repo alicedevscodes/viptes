@@ -156,7 +156,7 @@ async def confirm_pay(client, callback_query):
         now = datetime.now(waktu_jkt)
         expire_time = now + timedelta(minutes=10)
         formatted_time = expire_time.strftime("%H:%M")
-        qris_url = await Tools.upload_thumb(qris_path, int(total_price))
+        qris_url = await Tools.upload_qris(qris_path, int(total_price))
 
         sent_msg = await callback_query.message.reply_photo(
             qris_path,
