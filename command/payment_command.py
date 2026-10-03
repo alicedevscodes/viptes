@@ -78,7 +78,7 @@ async def kurang_tambah(client, callback_query):
     BULAN = int(callback_query.data.split()[1])
     PLAN = str(callback_query.data.split()[3])
     if PLAN == "basic": #vip campuran
-        HARGA = 15000
+        HARGA = 10000
     elif PLAN == "is_pro": #ubot
         HARGA = 10000
     try:
@@ -154,7 +154,7 @@ async def confirm_pay(client, callback_query):
         Tools.qris_dinamis(str(total_price), qris_path)
 
         now = datetime.now(waktu_jkt)
-        expire_time = now + timedelta(minutes=10)
+        expire_time = now + timedelta(minutes=3)
         formatted_time = expire_time.strftime("%H:%M")
         qris_url = await Tools.upload_thumb(qris_path)
 
