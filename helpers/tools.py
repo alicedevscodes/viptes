@@ -736,7 +736,7 @@ class Tools:
                         "amount": int(amount),
                         "useUniqueCode": False,
                         "packageIds": CASAKU_PACKAGE_IDS,
-                        "expiredInMinutes": 10,
+                        "expiredInMinutes": 3,
                         "qrType": "dynamic",
                         "paymentMethod": "qris",
                         "useQris": True,
