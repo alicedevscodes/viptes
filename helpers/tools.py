@@ -720,34 +720,7 @@ class Tools:
                 response.raise_for_status()
                 return (await response.text()).strip()
               
-    @staticmethod
-    async def upload_qris(qris_path, amount):
-        import httpx
-        try:
-            async with httpx.AsyncClient(timeout=20) as client:
-                response = await client.post(
-                    "https://api.casaku.id/api/generate/qris",
-                    headers={
-                        "x-license-key": CASAKU_LICENSE_KEY,
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "qr_id": CASAKU_QRIS_ID,
-                        "amount": int(amount),
-                        "useUniqueCode": False,
-                        "packageIds": CASAKU_PACKAGE_IDS,
-                        "expiredInMinutes": 3,
-                        "qrType": "dynamic",
-                        "paymentMethod": "qris",
-                        "useQris": True,
-                    },
-                )
-            print("CASAKU:", response.status_code, response.text)
-            return response.json()["data"]["payment_url"]
-        except Exception as e:
-            print("CASAKU ERROR:", repr(e))
-            return None
-          
+
     @staticmethod
     async def interact_with(message):
         await asyncio.sleep(1)
