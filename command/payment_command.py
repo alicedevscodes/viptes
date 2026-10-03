@@ -65,7 +65,7 @@ class CasakuError(Exception):
         if self.status == 401:
             return "License Key Casaku tidak valid / belum diisi (401)."
         if self.status == 403:
-            return "Listener Casaku OFFLINE (403). Buka aplikasi Casaku di HP."
+            return "Listener Casaku OFFLINE (403). Casaku Belum Premium."
         if self.status == 429:
             return "Rate limit Casaku tercapai (429)."
         return str(self)
