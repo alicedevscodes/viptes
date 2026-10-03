@@ -101,7 +101,7 @@ async def generate_qris(amount, expired_minutes=QRIS_EXPIRE_MINUTES):
         "id": CASAKU_QRIS_ID,
         "amount": int(amount),
         "useUniqueCode": True,
-        "packageids": [p.strip() for p in CASAKU_PACKAGE_IDS.split(",") if p.strip()]
+        "packageids": [p.strip() for p in CASAKU_PACKAGE_IDS.split(",") if p.strip()],
         "expiredInMinutes": expired_minutes,
     }
     return await _request("POST", "/api/generate/qris", json=payload)
