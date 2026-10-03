@@ -101,7 +101,7 @@ CASAKU_LICENSE_KEY = os.environ.get("casaku_78adb4546721e2a2219547a7bf0218db00ce
 CASAKU_QRIS_ID = os.environ.get("03823ea7-c975-45bd-b66e-32130f14e9e9")
 
 # Package ID Casaku
-CASAKU_PACKAGE_IDS = os.environ.get("id.dana")
+CASAKU_PACKAGE_IDS = os.environ.get(CASAKU_PACKAGE_IDS, "id.dana")
 
 # GENERATE QRIS NYA
 CODEQR = os.environ.get(
