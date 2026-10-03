@@ -293,6 +293,37 @@ async def confirm_pay(client, callback_query):
     )
     qris_path = None
     tid = None
+    
+    user_id = message.from_user.id
+    bukti = await client.forward_messages(
+            user_id,
+            f'<b>🧾 Silakan kirimkan bukti pembayaran yang sudah Anda lakukan</b>',
+            filters=filters.photo,
+        )
+        caption = bukti.caption or ''
+    if message.chat.type != enums.ChatType.PRIVATE:
+        return
+    if message.sticker:
+        return
+    text = message.text or message.caption or ""
+        return
+    user_id = message.from_user.id
+    forward = await client.forward_messages(
+        chat_id=LOG_SELLER, from_chat_id=message.chat.id, message_ids=message.id
+    )
+    await dB.set_var(forward.id, f"FORWARD_{forward.id}", user_id)
+
+        try:
+            await bukti.copy(
+                LOG_SELLER,
+                caption=f'\n\nPembayaran: {plan}\nHarga: {Message.format_rupiah(base_price)}',       
+            await callback_query.message.reply("<b>✅ Bukti pembayaran sukses dikirim, tunggu sebentar link akan dikirim.</b>")
+            await client.send_message(LOG_SELLER, f"Telah membayar di @{client.me.username}")
+            if os.path.exists(qris_path):
+                os.remove(qris_path)
+        except Exception as e:
+            print(f"Error saat mengirim bukti pembayaran: {e}")
+          
     try:
         try:
             trx = await generate_qris(amount, QRIS_EXPIRE_MINUTES)
@@ -416,6 +447,16 @@ async def confirm_pay(client, callback_query):
             user_id, "<b>An error occurred, please try again.</b>"
         )
 
+
+async def outgoing_reply(client, message):
+    rep = message.reply_to_message
+    if not rep:
+        return
+        user_id = await dB.get_var(rep.id, f"{rep.id}")
+        if user_id:
+            return await client.copy_message(
+                chat_id=user_id, from_chat_id=message.chat.id, message_id=message.id
+            )
 
 async def cancel_payment(client, callback_query):
     user_id = callback_query.from_user.id
