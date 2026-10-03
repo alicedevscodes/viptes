@@ -172,7 +172,7 @@ def get_price(plan, month):
 
 async def notify_admin(client, text):
     try:
-        await client.send_message(LOG_SELLER, f"<b>⚠️ Casaku:</b> {text}")
+        await client.send_message(LOG_SELLER, f"<b>⚠️ Error:</b> {text}")
     except Exception:
         pass
 
