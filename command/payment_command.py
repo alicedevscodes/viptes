@@ -78,7 +78,7 @@ async def kurang_tambah(client, callback_query):
     BULAN = int(callback_query.data.split()[1])
     PLAN = str(callback_query.data.split()[3])
     if PLAN == "basic": #vip campuran
-        HARGA = 2000
+        HARGA = 15000
     elif PLAN == "is_pro": #ubot
         HARGA = 10000
     try:
