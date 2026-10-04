@@ -414,7 +414,7 @@ class ButtonUtils:
                 [
                     (
                       (("Seblak Pedas"), 
-                     f"planusers basic", ButtonStyle.PRIMARY, "5258330865674494479")
+                     f"planusers basic", ButtonStyle.DANGER, "5258330865674494479")
                     ), 
                     (
                       (("Seblak Non Pedas"),
