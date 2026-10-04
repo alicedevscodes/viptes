@@ -45,11 +45,12 @@ transactions = {}
 waktu_jkt = timezone("Asia/Jakarta")
 
 PRICES = {
-    "basic": 1,
-    "pro": 1,
+    "basic": 50000,
+    "pro": 10000,
 }
 QRIS_EXPIRE_MINUTES = 10
 POLL_INTERVAL = 4
+PAID_STATUSES = ("paid", "success", "settlement", "completed", "lunas")
 INVITE_EXPIRE_MINUTES = 10  # masa berlaku link channel, setelah itu di-revoke
 
 # plan yang dibeli -> ID channel private yang sesuai
@@ -128,10 +129,12 @@ async def generate_qris(amount, expired_minutes=QRIS_EXPIRE_MINUTES):
         "id": CASAKU_QRIS_ID,
         "amount": int(amount),
         "useUniqueCode": True,
-        "packageids": [p.strip() for p in CASAKU_PACKAGE_IDS.split(",") if p.strip()],
+        "packageIds": [p.strip() for p in str(CASAKU_PACKAGE_IDS).split(",") if p.strip()],
         "expiredInMinutes": expired_minutes,
     }
-    return await _request("POST", "/api/generate/qris", json=payload)
+    result = await _request("POST", "/api/generate/qris", json=payload)
+    logger.info(f"CASAKU GENERATE: {result}")
+    return result
 
 
 async def check_status(transaction_id):
@@ -169,9 +172,14 @@ async def wait_for_payment(transaction_id, expired_minutes, is_active):
                 await asyncio.sleep(10)
             continue
 
-        status = data.get("status")
-        if status in ("paid", "cancel", "expired"):
-            return status
+        raw_status = str(data.get("status", "")).strip().lower()
+        logger.info(f"CASAKU CHECK {transaction_id[:8]}: {data}")
+        if raw_status in PAID_STATUSES:
+            return "paid"
+        if raw_status in ("cancel", "cancelled", "canceled"):
+            return "cancel"
+        if raw_status == "expired":
+            return "expired"
     return "expired"
 
 
