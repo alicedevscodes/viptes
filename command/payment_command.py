@@ -228,7 +228,7 @@ async def user_aggre(client, callback_query):
     return await send_rich(
         client,
         user_id,
-        heading("🛍️ Userbot Ultra Premium", 3),
+        heading("🛍️ Seblak Ultra Pedasss", 3),
         divider(),
         table(
             [
