@@ -5,6 +5,7 @@ from datetime import datetime
 
 import hydrogram
 from dateutil.relativedelta import relativedelta
+from pyrogram.enums import ButtonStyle
 from pyrogram.helpers import ikb, kb
 from pyrogram.types import (KeyboardButton, ReplyKeyboardMarkup,
                             ReplyKeyboardRemove)
@@ -56,7 +57,7 @@ async def mari_buat_userbot(client, message):
         return await dB.rem_expired_date(user_id)
     if not get_exp_user and user_id not in AKSES_DEPLOY:
         buttons = ikb(
-            [[("📃 Saya Setuju", "go_payment")], [("❌ Tutup", "buttonclose")]]
+            [[("📃 Saya Setuju", "go_payment", ButtonStyle.SUCCESS)], [("❌ Tutup", "buttonclose", ButtonStyle.DANGER)]]
         )
         text = f"<blockquote>{await Message.policy_message()}</blockquote>"
         return await message.reply(
