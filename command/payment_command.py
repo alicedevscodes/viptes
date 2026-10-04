@@ -35,7 +35,8 @@ from pytz import timezone
 
 from clients import bot
 from config import (AKSES_DEPLOY, CASAKU_BASE_URL, CASAKU_LICENSE_KEY,
-                    CASAKU_PACKAGE_IDS, CASAKU_QRIS_ID, LOG_SELLER, OWNER_ID)
+                    CASAKU_PACKAGE_IDS, CASAKU_QRIS_ID, LOG_SELLER, OWNER_ID,
+                    VIP_CHANNEL_ID)
 from database import dB
 from helpers import ButtonUtils, Emoji, Message
 from logs import logger
@@ -49,6 +50,7 @@ PRICES = {
 }
 QRIS_EXPIRE_MINUTES = 10
 POLL_INTERVAL = 4
+INVITE_EXPIRE_MINUTES = 10  # masa berlaku link channel, setelah itu di-revoke
 
 _http_client = None
 
@@ -208,6 +210,53 @@ async def _delete_qr_message(client, chat_id, message_id):
         await client.delete_messages(chat_id=chat_id, message_ids=message_id)
     except Exception:
         pass
+
+
+# ------------------------------------------------------------------
+# LINK INVITE CHANNEL PRIVATE (SEKALI KLIK) + REVOKE
+# ------------------------------------------------------------------
+async def _revoke_link_later(client, invite_link, delay):
+    """Tunggu `delay` detik lalu cabut link supaya tidak bisa dipakai lagi."""
+    try:
+        await asyncio.sleep(delay)
+        await client.revoke_chat_invite_link(VIP_CHANNEL_ID, invite_link)
+    except asyncio.CancelledError:
+        raise
+    except Exception as e:
+        # link yang sudah terpakai / kedaluwarsa kadang tidak bisa di-revoke lagi
+        logger.warning(f"Revoke invite link gagal/sudah tidak aktif: {e}")
+
+
+async def kirim_link_vip(client, user_id):
+    """
+    Buat link invite sekali pakai (member_limit=1) ke channel private,
+    kirim ke pembeli, lalu revoke otomatis setelah INVITE_EXPIRE_MINUTES.
+    """
+    expire_at = datetime.now(waktu_jkt) + timedelta(minutes=INVITE_EXPIRE_MINUTES)
+    link = await client.create_chat_invite_link(
+        chat_id=VIP_CHANNEL_ID,
+        name=f"VIP {user_id}",
+        expire_date=expire_at,
+        member_limit=1,
+    )
+    invite_link = link.invite_link
+
+    await client.send_message(
+        user_id,
+        f"""<b>✅ Pembayaran Berhasil</b>
+
+<blockquote><b>Klik tombol di bawah untuk masuk ke channel private.
+⚠️ Link hanya bisa dipakai <u>1 kali</u> dan berlaku {INVITE_EXPIRE_MINUTES} menit.</b></blockquote>""",
+        reply_markup=InlineKeyboardMarkup(
+            [[InlineKeyboardButton("🔗 Masuk Channel Private", url=invite_link)]]
+        ),
+    )
+
+    # cabut link setelah masa berlaku habis
+    asyncio.create_task(
+        _revoke_link_later(client, invite_link, INVITE_EXPIRE_MINUTES * 60 + 5)
+    )
+    return invite_link
 
 
 async def user_aggre(client, callback_query):
@@ -507,6 +556,20 @@ async def confirm_pay(client: Message, callback_query):
                     one_time_keyboard=True,
                 ),
             )
+
+            # Kirim link channel private sekali klik (auto revoke setelah expired)
+            try:
+                await kirim_link_vip(client, user_id)
+            except Exception as e:
+                logger.error(f"Gagal kirim link VIP: {traceback.format_exc()}")
+                await notify_admin(
+                    client,
+                    f"Gagal membuat link VIP untuk <code>{user_id}</code>: {e}",
+                )
+                await client.send_message(
+                    user_id,
+                    "<b>⚠️ Link channel gagal dibuat, admin akan mengirimkannya manual.</b>",
+                )
         else:
             await client.send_message(
                 user_id,
@@ -515,7 +578,7 @@ async def confirm_pay(client: Message, callback_query):
 
     except Exception:
         logger.error(f"ERROR confirm_pay: {traceback.format_exc()}")
-        if bukti_task:            # <-- tambahkan ini
+        if bukti_task:
             bukti_task.cancel()
         if transactions.get(user_id, {}).get("transaction_id") == tid:
             transactions.pop(user_id, None)
@@ -549,32 +612,18 @@ async def cancel_payment(client, callback_query):
 
 
 async def kasih_vip(client, callback_query):
+    """Dipanggil admin lewat tombol '💎 Akses VIP' setelah bukti dikirim pembeli."""
     user_ids = int(callback_query.data.split()[1])
-    msg = """<b>✅ Pembelian Channel VIP Sukses</b>
 
-Link VIP: <spoiler>cari dipencarian: @satorugojovip | satorugojovip.t.me | t.me/satorugojovip</spoiler>
-Cara melihat medianya:
-Klik profile channel diatas, lalu akan terlihat semua media.
-Atau bisa klik pin pesan yang sudah tersemat
-<blockquote><b>Jangan lupa beli userbot dengan fitur curi foto & video sekali liat
-Untuk penjelasan detailnya silahkan klik tombol Contoh Kelebihan Userbot</b></blockquote>
-✨ Selamat menikmat"""
+    try:
+        await kirim_link_vip(client, user_ids)
+    except Exception as e:
+        logger.error(f"ERROR kasih_vip: {traceback.format_exc()}")
+        return await callback_query.answer(
+            f"Gagal membuat link: {e}", show_alert=True
+        )
 
-    buttons = ikb(
-        [
-            [
-                ("💻 Beli Userbot", "https://t.me/devfavbot?start=kontol", "url", ButtonStyle.PRIMARY),
-                ("✨ Kelebihan Userbot", "https://t.me/devspaybot?start=kontol", "url", ButtonStyle.SUCCESS),
-            ],
-        ]
-    )
-    await client.send_message(
-        user_ids,
-        msg,
-        reply_markup=buttons,
-        effect_id=5104841245755180586,
-    )
-    await callback_query.message.edit("**✅ Pesan telah di kirim**")
+    await callback_query.message.edit("**✅ Link channel private sudah dikirim ke pembeli**")
 
 
 async def kasih_ubot(client, callback_query):
