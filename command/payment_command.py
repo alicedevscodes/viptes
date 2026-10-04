@@ -19,7 +19,15 @@ import qrcode
 from dateutil.relativedelta import relativedelta
 from pyrogram import filters, enums
 from pyrogram.enums import ButtonStyle
-from pyrogram.helpers import ikb
+from pyrogram.helpers import (send_rich,
+    paragraph,
+    heading,
+    divider,
+    footer,
+    table,
+    cell,
+    ikb
+)
 from pyrogram.types import (InlineKeyboardButton, InlineKeyboardMarkup,
                             KeyboardButton, ReplyKeyboardMarkup,
                             ReplyKeyboardRemove)
@@ -205,18 +213,67 @@ async def _delete_qr_message(client, chat_id, message_id):
 async def user_aggre(client, callback_query):
     await callback_query.answer()
     user_id = callback_query.from_user.id
-    del_ = await client.send_message(
-        user_id, "<b>Please wait...</b>", reply_markup=ReplyKeyboardRemove()
-    )
-    await del_.delete()
-    await callback_query.message.delete()
     buttons = ButtonUtils.chose_plan()
-    return await client.send_message(
+    loading = await client.send_message(
         user_id,
-        Message.chosePlan(),
-        disable_web_page_preview=True,
+        "<b>Please wait...</b>",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await loading.delete()
+    try:
+        await callback_query.message.delete()
+    except Exception:
+        pass
+
+    return await send_rich(
+        client,
+        user_id,
+        heading("🛍️ Userbot Ultra Premium", 3),
+        divider(),
+        table(
+            [
+                [
+                    cell("SEBLAK", is_header=True, align="center"),
+                    cell("💎 ULTRA PEDAS MENCRET ", is_header=True, align="center"),
+                ],
+                [
+                    cell("Rasa"),
+                    cell("✅ Ga enak", align="center"),
+                ],
+                [
+                    cell("Gratis"),
+                    cell("✅ Tidak", align="center"),
+                ],
+                [
+                    cell("Efek Mencret"),
+                    cell("✅ Iya", align="center"),
+                ],
+                [
+                    cell("Harga per bulan"),
+                    cell("Rp10.0000.000.000", align="center"),
+                ],
+            ],
+            bordered=True,
+            striped=True,
+            compact=True,
+        ),
+        divider(),
+        table(
+            [
+                [
+                    cell("AliceDevs Core v3.14 ⚡", align="center", is_header=True),
+                ],
+            ],
+            bordered=True,
+            striped=True,
+            compact=True,
+        ),
+        footer(
+            "⚠️ Seblak Pedas Dapat Menyebabkan Mencret-Mencret."
+        ),
         reply_markup=buttons,
     )
+
 
 
 async def chose_plan(client, callback_query):
