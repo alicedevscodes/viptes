@@ -26,7 +26,7 @@ DICT_BUTTON = {}
 
 COPY_ID = {}
 
-
+VIP_CHANNEL_ID = -1001234567890  # ID channel private (diawali -100)
 WAJIB_JOIN = ["asupanmujeh", "aliceajakok", "alicedevspro"]
 USENAME_OWNER = os.environ.get("USENAME_OWNER", "@aliceajako")
 API_ID = int(os.environ.get("API_ID", 39310745))
