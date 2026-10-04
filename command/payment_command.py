@@ -254,7 +254,7 @@ async def kirim_link_vip(client, user_id):
 
     # cabut link setelah masa berlaku habis
     asyncio.create_task(
-        _revoke_link_later(client, invite_link, INVITE_EXPIRE_MINUTES * 60 + 5)
+        _revoke_link_later(client, invite_link, INVITE_EXPIRE_MINUTES * 60 + 1)
     )
     return invite_link
 
