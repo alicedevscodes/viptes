@@ -45,8 +45,8 @@ transactions = {}
 waktu_jkt = timezone("Asia/Jakarta")
 
 PRICES = {
-    "basic": 50000,
-    "pro": 10000,
+    "basic": 1,
+    "pro": 1,
 }
 QRIS_EXPIRE_MINUTES = 10
 POLL_INTERVAL = 4
