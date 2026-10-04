@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 import httpx
 import qrcode
 from dateutil.relativedelta import relativedelta
+from pyrogram import filters, enums
 from pyrogram.enums import ButtonStyle
 from pyrogram.helpers import ikb
 from pyrogram.types import (InlineKeyboardButton, InlineKeyboardMarkup,
@@ -172,7 +173,7 @@ def get_price(plan, month):
 
 async def notify_admin(client, text):
     try:
-        await client.send_message(LOG_SELLER, f"<b>⚠️ Error:</b> {text}")
+        await client.send_message(LOG_SELLER, f"<b>⚠️ Casaku:</b> {text}")
     except Exception:
         pass
 
@@ -260,26 +261,29 @@ async def kurang_tambah(client, callback_query):
         logger.error(f"ERROR kurang_tambah: {traceback.format_exc()}")
 
 
-async def confirm_pay(client, callback_query):
+async def confirm_pay(client: Message, callback_query):
     await callback_query.answer()
     data = callback_query.data.split()
     user_id = callback_query.from_user.id
 
-    try:
-        month = int(data[1])
-    except (IndexError, ValueError):
-        month = 0
     plan = str(data[-1])
     PLAN = plan_label(plan)
+    unit = PRICES[normalize_plan(plan)]
+
+    try:
+        val = int(data[1])
+    except (IndexError, ValueError):
+        val = 0
+    # data[1] berisi TOTAL HARGA (mis. 10000), bukan jumlah bulan
+    month = val // unit if val >= unit else val
 
     await callback_query.message.delete()
 
-    if month <= 0:
-        return await client.send_message(user_id, "<b>The month cannot be 0.</b>")
+    if not 1 <= month <= 12:
+        return await client.send_message(user_id, "<b>Jumlah bulan tidak valid.</b>")
     amount = get_price(plan, month)
     if amount <= 0:
         return await client.send_message(user_id, "<b>The price cannot be 0.</b>")
-
     if user_id in transactions:
         return await callback_query.message.reply(
             "**__📑 You still have a pending transaction.__**",
@@ -293,37 +297,7 @@ async def confirm_pay(client, callback_query):
     )
     qris_path = None
     tid = None
-    
-    user_id = message.from_user.id
-    bukti = await client.forward_messages(
-            user_id,
-            f'<b>🧾 Silakan kirimkan bukti pembayaran yang sudah Anda lakukan</b>',
-            filters=filters.photo,
-        )
-        caption = bukti.caption or ''
-    if message.chat.type != enums.ChatType.PRIVATE:
-        return
-    if message.sticker:
-        return
-    text = message.text or message.caption or ""
-        return
-    user_id = message.from_user.id
-    forward = await client.forward_messages(
-        chat_id=LOG_SELLER, from_chat_id=message.chat.id, message_ids=message.id
-    )
-    await dB.set_var(forward.id, f"FORWARD_{forward.id}", user_id)
-
-        try:
-            await bukti.copy(
-                LOG_SELLER,
-                caption=f'\n\nPembayaran: {plan}\nHarga: {Message.format_rupiah(base_price)}',       
-            await callback_query.message.reply("<b>✅ Bukti pembayaran sukses dikirim, tunggu sebentar link akan dikirim.</b>")
-            await client.send_message(LOG_SELLER, f"Telah membayar di @{client.me.username}")
-            if os.path.exists(qris_path):
-                os.remove(qris_path)
-        except Exception as e:
-            print(f"Error saat mengirim bukti pembayaran: {e}")
-          
+    bukti_task = None
     try:
         try:
             trx = await generate_qris(amount, QRIS_EXPIRE_MINUTES)
@@ -338,7 +312,7 @@ async def confirm_pay(client, callback_query):
         total_price = int(trx["totalAmount"])
         expired_min = int(trx.get("expiredInMinutes", QRIS_EXPIRE_MINUTES))
         payment_url = trx.get("payment_url")
-        item_name = f"Sewa Userbot {PLAN} {month} Months"
+        item_name = f"Seblak Mencret {month} Months"
 
         qris_path = f"qris_{user_id}_{tid[:8]}.png"
         await make_qr_image(trx["qr_string"], qris_path)
@@ -364,14 +338,14 @@ async def confirm_pay(client, callback_query):
 💰 Total Bayar: <code>{Message.format_rupiah(total_price)}</code>
 ⏰ Berlaku sampai: <code>{expire_time.strftime('%H:%M')}</code>
 
-⚠️ Bayar PERSIS sesuai Total Bayar (termasuk kode unik). Pembayaran terdeteksi otomatis.
+⚠️ Bayar Seblak sesuai Total Bayar (termasuk kode unik). Pembayaran terdeteksi otomatis.
 </b></blockquote>
 <blockquote>© Auto Payment By: @{client.me.username}</blockquote>
 """,
             reply_markup=InlineKeyboardMarkup(buttons),
         )
-        _remove_file(qris_path)
 
+        # Daftarkan transaksi dulu, supaya tombol Cancel langsung berfungsi
         transactions[user_id] = {
             "transaction_id": tid,
             "qris_path": qris_path,
@@ -382,9 +356,51 @@ async def confirm_pay(client, callback_query):
         def still_active():
             return transactions.get(user_id, {}).get("transaction_id") == tid
 
+        # Minta bukti di background, supaya polling tidak tertahan
+        async def minta_bukti():
+            try:
+                bukti = await client.ask(
+                    user_id,
+                    "<b>🧾 Silakan kirimkan bukti pembayaran yang sudah Anda lakukan</b>",
+                    filters=filters.photo,
+                    timeout=expired_min * 60,
+                )
+                copied = await bukti.copy(
+                    LOG_SELLER,
+                    caption=(
+                        f"<b>🧾 Bukti pembayaran</b>\n\n"
+                        f"User: <code>{user_id}</code>\n"
+                        f"Plan: {PLAN}\n"
+                        f"Harga: {Message.format_rupiah(amount)}"
+                    ),
+                    reply_markup=ikb(
+                        [
+                            [
+                                ("💎 Akses VIP", f"vip {user_id} {client.me.username}", ButtonStyle.PRIMARY),
+                                ("💻 Akses Ubot", f"ubot {user_id} {client.me.username} {plan} {month}", ButtonStyle.SUCCESS),
+                            ],
+                        ]
+                    ),
+                )
+                # supaya admin bisa membalas pembeli lewat outgoing_reply
+                await dB.set_var(copied.id, f"FORWARD_{copied.id}", user_id)
+                await client.send_message(
+                    user_id,
+                    "<b>✅ Bukti pembayaran terkirim, tunggu admin memproses.</b>",
+                )
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.error(f"Error kirim bukti: {e}")
+            
+
+        bukti_task = asyncio.create_task(minta_bukti())
+
+        # Polling status pembayaran ke Casaku
         try:
             status = await wait_for_payment(tid, expired_min, still_active)
         except CasakuError as e:
+            bukti_task.cancel()
             logger.error(f"Casaku polling error: {e}")
             await notify_admin(client, f"Polling gagal untuk {tid}: {e.admin_message}")
             if still_active():
@@ -395,9 +411,11 @@ async def confirm_pay(client, callback_query):
                 "<b>⚠️ Gagal mengecek pembayaran. Jika sudah membayar, hubungi admin dengan menyertakan bukti transfer.</b>",
             )
 
+        bukti_task.cancel()  # pembayaran selesai/batal/expired, berhenti menunggu foto
+
         if status == "cancelled":
             return
-
+          
         if still_active():
             del transactions[user_id]
         await _delete_qr_message(client, sent_msg.chat.id, sent_msg.id)
@@ -440,6 +458,8 @@ async def confirm_pay(client, callback_query):
 
     except Exception:
         logger.error(f"ERROR confirm_pay: {traceback.format_exc()}")
+        if bukti_task:            # <-- tambahkan ini
+            bukti_task.cancel()
         if transactions.get(user_id, {}).get("transaction_id") == tid:
             transactions.pop(user_id, None)
         _remove_file(qris_path)
@@ -447,16 +467,6 @@ async def confirm_pay(client, callback_query):
             user_id, "<b>An error occurred, please try again.</b>"
         )
 
-
-async def outgoing_reply(client, message):
-    rep = message.reply_to_message
-    if not rep:
-        return
-        user_id = await dB.get_var(rep.id, f"{rep.id}")
-        if user_id:
-            return await client.copy_message(
-                chat_id=user_id, from_chat_id=message.chat.id, message_id=message.id
-            )
 
 async def cancel_payment(client, callback_query):
     user_id = callback_query.from_user.id
