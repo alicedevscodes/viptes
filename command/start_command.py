@@ -175,7 +175,7 @@ async def start_home(client, message):
     if image_start:
         if "video" in image_start:
             loading = await message.reply_sticker(
-                "CAACAgUAAxkDAAJ-RGqffsNXy8xRV3x-7mDq7Eeb-6gvAAL2HQACEKpwVeEmDkuMxFeRHgQ"
+                "CAACAgUAAyEFAAToxR-FAAIEvWrCDM4isV-eCFKPaMtlQ4hQkQrRAALGAQACZWvpVO9gdZa9gYmkHgQ"
             )
             await asyncio.sleep(1)
             await loading.delete()
@@ -186,7 +186,7 @@ async def start_home(client, message):
             )
         elif "photo" in image_start:
             loading = await message.reply_sticker(
-                "CAACAgUAAxkDAAJ-RGqffsNXy8xRV3x-7mDq7Eeb-6gvAAL2HQACEKpwVeEmDkuMxFeRHgQ"
+                "CAACAgUAAyEFAAToxR-FAAIEvWrCDM4isV-eCFKPaMtlQ4hQkQrRAALGAQACZWvpVO9gdZa9gYmkHgQ"
             )
             await asyncio.sleep(1)
             await loading.delete()
@@ -197,7 +197,7 @@ async def start_home(client, message):
             )
     else:
         loading = await message.reply_sticker(
-            "CAACAgUAAxkDAAJ-RGqffsNXy8xRV3x-7mDq7Eeb-6gvAAL2HQACEKpwVeEmDkuMxFeRHgQ"
+            "CAACAgUAAyEFAAToxR-FAAIEvWrCDM4isV-eCFKPaMtlQ4hQkQrRAALGAQACZWvpVO9gdZa9gYmkHgQ"
         )
         await asyncio.sleep(1)
         await loading.delete()
