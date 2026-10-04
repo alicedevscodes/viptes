@@ -94,16 +94,16 @@ SPOTIFY_CLIENT_SECRET = os.environ.get(
 FAKE_DEVS = list(map(int, os.environ.get("FAKE_DEVS", "1054295664").split()))
 
 CASAKU_BASE_URL = os.environ.get("CASAKU_BASE_URL", "https://api.casaku.id")
-
-CASAKU_LICENSE_KEY = os.environ.get("CASAKU_LICENSE_KEY", "casaku_live_7fc242a7c3864e0feda19ff8d7a523f7")
+CASAKU_LICENSE_KEY = os.environ.get("CASAKU_LICENSE_KEY", "cashify_144e6d6ca8226e7ea82378fd4d76e9fde47eb912873f6e8353d92a5e781786e0")
 
 # ID QRIS yang sudah terdaftar di Casaku
-CASAKU_QRIS_ID = os.environ.get("CASAKU_QRIS_ID", "03823ea7-c975-45bd-b66e-32130f14e9e9")
+CASAKU_QRIS_ID = os.environ.get("CASAKU_QRIS_ID", "fd866e6e-a9aa-4723-aa16-ac7dea1c8bff")
 
 # Package ID Casaku
 CASAKU_PACKAGE_IDS = os.environ.get("CASAKU_PACKAGE_IDS", "id.dana")
 
-# GENERATE QRIS NYA
+
+
 CODEQR = os.environ.get(
     "CODEQR",
     "00020101021126570011ID.DANA.WWW011893600915382885122502098288512250303UMI51440014ID.CO.QRIS.WWW0215ID10253733543370303UMI5204581253033605802ID5912Citra Geprek6015Kabupaten Dairi6105222146304BB48"
