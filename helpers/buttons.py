@@ -422,7 +422,7 @@ class ButtonUtils:
                     ),
                 ],             
 
-                [("❌ Batal", "buttonclose", ButtonStyle.DANGER, "5260293700088511294")],
+                [(" Batal", "buttonclose", ButtonStyle.DANGER, "5260293700088511294")],
             ]
         )
         return button
