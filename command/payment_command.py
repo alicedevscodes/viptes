@@ -351,7 +351,7 @@ async def user_aggre(client, callback_query):
                     cell("Efek Mencret"),
                     cell(
                         [
-                            emo(6124947887529921159, "✅"),
+                            emo(5456140674028019486, "✅"),
                             " Iya",
                         ],
                         align="center",
@@ -395,7 +395,7 @@ async def user_aggre(client, callback_query):
         
         footer(
             [
-                emo(6124947887529921159, "⚠️"),
+                emo(6114074516395134769, "⚠️"),
                 " Seblak pedas dapat menyebabkan mencret-mencret.",
             ]
         ),
@@ -562,8 +562,8 @@ async def confirm_pay(client: Message, callback_query):
                     reply_markup=ikb(
                         [
                             [
-                                ("💎 Akses VIP", f"vip {user_id} {client.me.username} {plan}", ButtonStyle.PRIMARY),
-                                ("💻 Akses Ubot", f"ubot {user_id} {client.me.username} {plan} {month}", ButtonStyle.SUCCESS),
+                                (" Akses VIP", f"vip {user_id} {client.me.username} {plan}", ButtonStyle.PRIMARY),
+                                (" Akses Ubot", f"ubot {user_id} {client.me.username} {plan} {month}", ButtonStyle.SUCCESS),
                             ],
                         ]
                     ),
