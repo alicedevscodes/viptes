@@ -111,7 +111,7 @@ async def welcome_rich_table(
             paragraph([emo(5967683261940372267), " Hi\n", user_mention]),
             paragraph([
                 emo(5215420556089776398, "🤖"),
-                f" Ini adalah contih bot auto payment"
+                f" Ini adalah contoh bot auto payment"
             ]),
             divider(),
             table(
@@ -154,6 +154,7 @@ async def welcome_rich_table(
                           [
                               *emos(
                                   6122810011723761490,
+                                
                                   6156658206601906188,
                                   6122839423659804332,
                                   6123119356743256249,
