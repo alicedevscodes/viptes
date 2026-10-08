@@ -28,6 +28,10 @@ from helpers import Basic_Effect, ButtonUtils, Message, Tools, no_commands
 from logs import logger
 
 
+def emo(emoji_id, alt="✨"):
+    return RichTextCustomEmoji(custom_emoji_id=str(emoji_id), alternative_text=alt)
+
+
 async def gen_image(client):
     image = None
     file_id = await dB.get_var(client.me.id, "IMAGE_START")
