@@ -235,7 +235,7 @@ class ButtonUtils:
           (("Beli Seblak Bang"), ButtonStyle.PRIMARY, "5373052667671093676"),
         ],
         [
-          (("Tombol Custom DLL"), ButtonStyle.SUCCESS, "6240210026477130678"),
+          (("Tombol Custom DLL"), ButtonStyle.DANGER, "6240210026477130678"),
         ],
           
     ]
