@@ -297,49 +297,109 @@ async def user_aggre(client, callback_query):
     return await send_rich(
         client,
         user_id,
-        heading("🛍️ Seblak Ultra Pedasss", 3),
+        heading(
+            [
+                emo(6124947887529921159, "💎"),
+                " 🛍️ Seblak Ultra Pedasss",
+            ],
+            3,
+        ),
+        
         divider(),
+        
         table(
             [
                 [
-                    cell("SEBLAK", is_header=True, align="center"),
-                    cell("💎 ULTRA PEDAS MENCRET ", is_header=True, align="center"),
+                    cell(
+                        [
+                            emo(6124947887529921159, "💎"),
+                            " SEBLAK",
+                        ],
+                        is_header=True,
+                        align="center",
+                    ),
+                    cell(
+                        [
+                            emo(6124947887529921159, "💎"),
+                            " ULTRA PEDAS MENCRET",
+                        ],
+                        is_header=True,
+                        align="center",
+                    ),
                 ],
                 [
                     cell("Rasa"),
-                    cell("✅ Ga enak", align="center"),
+                    cell(
+                        [
+                            emo(6124947887529921159, "✅"),
+                            " Ga enak",
+                        ],
+                        align="center",
+                    ),
                 ],
                 [
                     cell("Gratis"),
-                    cell("✅ Tidak", align="center"),
+                    cell(
+                        [
+                            emo(6124947887529921159, "✅"),
+                            " Tidak",
+                        ],
+                        align="center",
+                    ),
                 ],
                 [
                     cell("Efek Mencret"),
-                    cell("✅ Iya", align="center"),
+                    cell(
+                        [
+                            emo(6124947887529921159, "✅"),
+                            " Iya",
+                        ],
+                        align="center",
+                    ),
                 ],
                 [
                     cell("Harga per bulan"),
-                    cell("Rp10.0000.000.000", align="center"),
+                    cell(
+                        [
+                            emo(6124947887529921159, "💰"),
+                            " Rp10.000.000.000",
+                        ],
+                        align="center",
+                    ),
                 ],
             ],
             bordered=True,
             striped=True,
             compact=True,
         ),
+        
         divider(),
+        
         table(
             [
                 [
-                    cell("AliceDevs Core v3.14 ⚡", align="center", is_header=True),
+                    cell(
+                        [
+                            "AliceDevs Core v3.14 ",
+                            emo(6124947887529921159, "⚡"),
+                        ],
+                        align="center",
+                        is_header=True,
+                    ),
                 ],
             ],
             bordered=True,
             striped=True,
             compact=True,
         ),
+        
         footer(
-            "⚠️ Seblak Pedas Dapat Menyebabkan Mencret-Mencret."
+            [
+                emo(6124947887529921159, "⚠️"),
+                " Seblak pedas dapat menyebabkan mencret-mencret.",
+            ]
         ),
+        
         reply_markup=buttons,
     )
 
