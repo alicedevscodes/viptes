@@ -20,7 +20,7 @@ from pyrogram.helpers import (
     video_block,
     send_markdown_rich,
 )
-from pyrogram.types import InputRichMessage, RichTextMarked, RichTextTextMention, RichTextBold
+from pyrogram.types import InputRichMessage, RichTextMarked, RichTextTextMention, RichTextBold, RichTextCustomEmoji
 from clients import bot
 from config import KYNAN, LOG_SELLER, SUDO_OWNERS, BOT_NAME
 from database import dB, state
