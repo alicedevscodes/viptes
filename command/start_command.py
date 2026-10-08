@@ -24,7 +24,7 @@ from pyrogram.types import InputRichMessage, RichTextMarked, RichTextTextMention
 from clients import bot
 from config import KYNAN, LOG_SELLER, SUDO_OWNERS, BOT_NAME
 from database import dB, state
-from helpers import Basic_Effect, ButtonUtils, Message, Tools, no_commands, emo, emos
+from helpers import Basic_Effect, ButtonUtils, Message, Tools, no_commands, emos
 from logs import logger
 
 
