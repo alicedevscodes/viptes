@@ -144,6 +144,7 @@ async def welcome_rich_table(
             divider(),
         ]
     )
+)
     return await client.send_rich_message(
         chat_id=message.chat.id,
         rich_message=rich,
