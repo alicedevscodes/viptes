@@ -381,7 +381,7 @@ async def user_aggre(client, callback_query):
                     cell(
                         [
                             "AliceDevs Core v3.14 ",
-                            emo(6124947887529921159, "⚡"),
+                            emo(5456140674028019486, "⚡"),
                         ],
                         align="center",
                         is_header=True,
