@@ -107,44 +107,41 @@ async def welcome_rich_table(
 ):
     user_mention = _format_user_mention(message.from_user)
     rich = InputRichMessage(
+        rich = InputRichMessage(
         blocks=[
-            heading(["✨ Hi\n",   user_mention, 3]),
-            paragraph(f"Ini adalah contoh bot auto payment"),
-            paragraph("Metode QRIS payment gateway casaku.id"),
-            divider(),
-            details(
-                  paragraph("📂 SEBLAK MENCRET"),
-            table(
-                [
-                    [cell("🍜 Seblak", is_header=True, align="center")],
-                    [cell("Pedas ", align="center")],
-                    [cell("Rp. 9.000.000,-", align="center")],
-                ],
-            ),
-         ),
-            details(
-                  paragraph("📂 MIE AYAM MENCRET"),
-            table(
-                [
-                    [cell("🍜 Mie Ayam", is_header=True), cell("☕ Kopi Hitam", is_header=True)],
-                    [cell("Tanpa ayam"), cell("Tanpa gelas")],
-                    [cell("✅ Ga enak"), cell("❌ Ga enak")],
-                    [cell("Rp. 9.000.000"), cell("Rp. 1 Miliyar")],
-                ],
-                bordered=True,
-                striped=True,
-            ),
-        ),
-            details(
-                "📂 Klik untuk penjelasan contoh",
-                 paragraph("Ini Contoh Bot Auto Payment QRIS CASAKU.ID\nMENCRET LOE PADA"),
-            ),
+            paragraph([emo(5967683261940372267), " Hi\n", user_mention]),
+            paragraph([
+                emo(5215420556089776398, "🤖"),
+                f" Ini adalah contih bot auto payment"
+            ]),
             divider(),
             table(
-                  [
-                    [cell("AliceDevs Core v3.14 ⚡", align="center", is_header=True)],
-                  ],
+                [
+                    [cell(
+                        [emo(6124947887529921159, "💎"), RichTextBold(" DAGANGAN LOE")],
+                        is_header=True,
+                    )],
+                    [cell([emo(5264946326491134516, "🎮"), " Seblak Mencret"])],
+                    [cell([emo(5789632781344575552, "✅"), " Mixue Mencret"])],
+                    [cell([emo(5935835460965242201, "✅"), " Mie Ayam Mencret"])],
+                    [cell([emo(6122810011723761490, 6156658206601906188, 6122839423659804332, 6123119356743256249, 6122857737400354779, "✅"), " E-Wallet"])],
+                    [cell([emo(6124968881330064561, 6127403058340038849, 6127616621293865541, 6125174374040340808, 6127693200560753259, "💰"), " Bank,-"])],
+                ],
             ),
+            divider(),
+            details(
+                [emo(5431420628978641216, "🤖"), " Misal penjelasan dagangan loe"],
+                paragraph([
+                    emo(5373052667671093676, "🤖"),
+                    " Ini adalah penjelasan dagangan loe yang bikin mencret mencret "
+                ]),
+            ),
+            table(
+                [
+                    [cell(["AliceDevs Core v3.14 ", emo(5456140674028019486, "⚡")], align="center")],
+                ],
+            ),
+            divider(),
         ]
     )
     return await client.send_rich_message(
