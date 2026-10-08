@@ -107,7 +107,6 @@ async def welcome_rich_table(
 ):
     user_mention = _format_user_mention(message.from_user)
     rich = InputRichMessage(
-        rich = InputRichMessage(
         blocks=[
             paragraph([emo(5967683261940372267), " Hi\n", user_mention]),
             paragraph([
@@ -146,7 +145,7 @@ async def welcome_rich_table(
             divider(),
         ]
     )
-)
+
     return await client.send_rich_message(
         chat_id=message.chat.id,
         rich_message=rich,
