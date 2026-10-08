@@ -232,10 +232,10 @@ class ButtonUtils:
         """Generate start menu keyboard."""
         common_buttons = [
         [
-          (("Beli Seblak Bang"), ButtonStyle.PRIMARY, "5258330865674494479"),
+          (("Beli Seblak Bang"), ButtonStyle.PRIMARY, "5373052667671093676"),
         ],
         [
-          (("Tombol Custom DLL"), ButtonStyle.SUCCESS, "5258330865674494479"),
+          (("Tombol Custom DLL"), ButtonStyle.SUCCESS, "6240210026477130678"),
         ],
           
     ]
@@ -399,10 +399,10 @@ class ButtonUtils:
         button = ikb(
             [
                 [
-                    ("✨ Ya saya ingin membeli", f"tambah {bulan} {harga} {plan}", ButtonStyle.PRIMARY, "5258330865674494479"),
+                    (" Ya saya ingin membeli", f"tambah {bulan} {harga} {plan}", ButtonStyle.PRIMARY, "5373052667671093676"),
                 ],
-                [("✅ Konfirmasi", f"confirm {harga} {plan}", ButtonStyle.SUCCESS, "5258330865674494479")],
-                [("❌ Batal", "buttonclose", ButtonStyle.DANGER, "5258330865674494479")],
+                [(" Konfirmasi", f"confirm {harga} {plan}", ButtonStyle.SUCCESS, "6296367896398399651")],
+                [(" Batal", "buttonclose", ButtonStyle.DANGER, "5260293700088511294")],
             ]
         )
         return button
@@ -413,16 +413,16 @@ class ButtonUtils:
             [
                 [
                     (
-                      (("Seblak Pedas"), 
-                     f"planusers basic", ButtonStyle.DANGER, "5258330865674494479")
+                      ((" Seblak Pedas"), 
+                     f"planusers basic", ButtonStyle.DANGER, "5458908492687497206")
                     ), 
                     (
-                      (("Seblak Non Pedas"),
-                     f"planusers is_pro", ButtonStyle.PRIMARY, "5258330865674494479")
+                      ((" Seblak Non Pedas"),
+                     f"planusers is_pro", ButtonStyle.PRIMARY, "5258397811329739167")
                     ),
                 ],             
 
-                [("❌ Batal", "buttonclose", ButtonStyle.DANGER)],
+                [("❌ Batal", "buttonclose", ButtonStyle.DANGER, "5260293700088511294")],
             ]
         )
         return button
