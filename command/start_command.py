@@ -119,7 +119,7 @@ async def welcome_rich_table(
                   [
                       cell(
                           [
-                              emo(6124947887529921159, "💎"),
+                              emo(6269368817147711866, "💎"),
                               RichTextBold(" DAGANGAN LOE"),
                           ],
                           is_header=True,
