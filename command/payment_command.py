@@ -331,7 +331,7 @@ async def user_aggre(client, callback_query):
                     cell("Rasa"),
                     cell(
                         [
-                            emo(6124947887529921159, "✅"),
+                            emo(5372824841130879657, "✅"),
                             " Ga enak",
                         ],
                         align="center",
@@ -341,7 +341,7 @@ async def user_aggre(client, callback_query):
                     cell("Gratis"),
                     cell(
                         [
-                            emo(6124947887529921159, "✅"),
+                            emo(5258190433128834075, "✅"),
                             " Tidak",
                         ],
                         align="center",
@@ -361,7 +361,7 @@ async def user_aggre(client, callback_query):
                     cell("Harga per bulan"),
                     cell(
                         [
-                            emo(6124947887529921159, "💰"),
+                            emo(5269720586367542578, "💰"),
                             " Rp10.000.000.000",
                         ],
                         align="center",
