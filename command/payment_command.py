@@ -300,7 +300,7 @@ async def user_aggre(client, callback_query):
         heading(
             [
                 emo(5373052667671093676, "💎"),
-                " 🛍️ Seblak Ultra Pedasss",
+                " Seblak Ultra Pedasss",
             ],
             3,
         ),
