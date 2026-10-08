@@ -6,6 +6,7 @@ from .autofw import AutoFW
 from .bingai import AsyncImageGenerator, BingCookies
 from .buttons import ButtonUtils, paginate_modules
 from .commands import CMD, FILTERS, no_commands, no_trigger, trigger
+from .emoprem import emo, emos
 from .emoji_logs import Basic_Effect, Emoji, Premium_Effect, animate_proses
 from .fonts import Fonts, gens_font, query_fonts
 from .loaders import (CheckSellerCount, CheckUsers, CleanAcces, ExpiredUser,
