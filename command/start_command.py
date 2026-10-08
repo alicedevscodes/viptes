@@ -178,7 +178,7 @@ async def welcome_rich_table(
                       )
                   ],
               ],
-          )
+          ),
             divider(),
             details(
                 [emo(5431420628978641216, "🤖"), " Misal penjelasan dagangan loe"],
