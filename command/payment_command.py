@@ -299,7 +299,7 @@ async def user_aggre(client, callback_query):
         user_id,
         heading(
             [
-                emo(6124947887529921159, "💎"),
+                emo(5373052667671093676, "💎"),
                 " 🛍️ Seblak Ultra Pedasss",
             ],
             3,
@@ -312,15 +312,15 @@ async def user_aggre(client, callback_query):
                 [
                     cell(
                         [
-                            emo(6124947887529921159, "💎"),
-                            " SEBLAK",
+                            emo(5258397811329739167, "💎"),
+                            " SEBLAK DINGIN",
                         ],
                         is_header=True,
                         align="center",
                     ),
                     cell(
                         [
-                            emo(6124947887529921159, "💎"),
+                            emo(5458908492687497206, "💎"),
                             " ULTRA PEDAS MENCRET",
                         ],
                         is_header=True,
