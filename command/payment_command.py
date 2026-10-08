@@ -38,7 +38,7 @@ from config import (AKSES_DEPLOY, CASAKU_BASE_URL, CASAKU_LICENSE_KEY,
                     CASAKU_PACKAGE_IDS, CASAKU_QRIS_ID, LOG_SELLER, OWNER_ID,
                     VIP_CHANNEL_BASIC, VIP_CHANNEL_PRO)
 from database import dB
-from helpers import ButtonUtils, Emoji, Message
+from helpers import ButtonUtils, Emoji, Message, emo
 from logs import logger
 
 transactions = {}
