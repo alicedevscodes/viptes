@@ -15,7 +15,7 @@ from clients import UserBot, bot, navy
 from config import (AKSES_DEPLOY, API_HASH, API_ID, BOT_ID, LOG_SELLER,
                     MAX_BOT, SUDO_OWNERS, WAJIB_JOIN)
 from database import dB, state
-from helpers import ButtonUtils, Message, TokenReferal, no_trigger
+from helpers import ButtonUtils, Message, TokenReferal, no_trigger, emo
 from logs import logger
 from plugins import PLUGINS
 
@@ -57,7 +57,7 @@ async def mari_buat_userbot(client, message):
         return await dB.rem_expired_date(user_id)
     if not get_exp_user and user_id not in AKSES_DEPLOY:
         buttons = ikb(
-            [[("📃 Saya Setuju", "go_payment", ButtonStyle.SUCCESS)], [("❌ Tutup", "buttonclose", ButtonStyle.DANGER)]]
+            [[(" Saya Setuju", "go_payment", ButtonStyle.SUCCESS, "5395652789877632866")], [(" Tutup", "buttonclose", ButtonStyle.DANGER, "5395772851393424368")]]
         )
         text = f"<blockquote>{await Message.policy_message()}</blockquote>"
         return await message.reply(
