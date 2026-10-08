@@ -57,7 +57,7 @@ async def mari_buat_userbot(client, message):
         return await dB.rem_expired_date(user_id)
     if not get_exp_user and user_id not in AKSES_DEPLOY:
         buttons = ikb(
-            [[(" Saya Setuju", "go_payment", ButtonStyle.SUCCESS, "5395652789877632866")], [(" Tutup", "buttonclose", ButtonStyle.DANGER, "5395772851393424368")]]
+            [[(" Setuju Membeli", "go_payment", ButtonStyle.SUCCESS, "6269136309093143551")], [(" Tutup", "buttonclose", ButtonStyle.DANGER, "5395772851393424368")]]
         )
         text = f"<blockquote>{await Message.policy_message()}</blockquote>"
         return await message.reply(
