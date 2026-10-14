@@ -137,6 +137,10 @@ async def _(client, callback):
             return await kasih_ubot(client, callback)
         elif query.startswith("nokos"):
             return await kasih_nokos(client, callback)
+        elif query.startswith("pilihnokos"):
+            return await pilih_nokos(client, callback)
+        elif query.startswith("buynokos"):
+            return await beli_nokos(client, callback)
         elif query == ("batal_payment"):
             return await cancel_payment(client, callback)
 
