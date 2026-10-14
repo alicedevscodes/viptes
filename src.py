@@ -226,7 +226,7 @@ async def start_main_bot():
     await bot.start()
     await bot.add_reseller()
     logger.info("✅ Main bot started successfully.")
-    total_bots = len(Navy._ubot)
+    total_bots = len(navy._ubot)
     message = "🔥**Bot berhasil diaktifkan**🔥\n" f"✅ **Total User: {total_bots}**"
     await dB.set_var(bot.id, "total_users", total_bots)
     try:
