@@ -7,7 +7,6 @@
 
 ######################################################
 
-
 import asyncio
 import os
 import time
@@ -72,13 +71,6 @@ PRODUCT_BY_PLAN = {
     "is_pro": "vip",
 }
 
-# ------------------------------------------------------------------
-# [BARU] KONFIGURASI NOKOS (nomor kosong)
-# Stok disimpan di vars (database), satu var per id:
-#   nokos_id1 = "0811111, 0811112"
-#   nokos_id2 = "082222, 0822221"
-#   nokos_id5 = "085555, 0855553"
-# ------------------------------------------------------------------
 
 nokos_id1 = "0811111, 0811112"
 nokos_id2 = "082222, 0822221"
@@ -341,6 +333,74 @@ async def restock_nokos(nokos_id, number):
         if number not in numbers:
             numbers.append(number)
             await save_nokos_list(nokos_id, numbers)
+
+# ------------------------------------------------------------------
+# [BARU] PERINTAH TAMBAH STOK & CEK STOK NOKOS
+# /nokos1 0811111 0811112
+# /nokos2 082222 0822221
+# /nokos5 085555 0855553
+# /stok
+# ------------------------------------------------------------------
+async def tambah_nokos_cmd(client, message):
+    user_id = message.from_user.id
+    if user_id != OWNER_ID:
+        return await message.reply("<b>❌ Perintah ini hanya untuk Owner.</b>")
+
+    parts = message.text.split()
+    if len(parts) < 2:
+        return await message.reply(
+            "<b>Format salah.</b>Contoh: <code>/nokos1 0811111 0811112</code>"
+        )
+    nokos_id = "nokos_" + parts[0].replace("/", "")
+    if nokos_id not in NOKOS_IDS:
+        return await message.reply(
+            f"<b>❌ ID nokos tidak terdaftar:</b> <code>{nokos_id}</code>"
+        )
+    new_numbers = [n.strip() for n in parts[1:] if n.strip()]
+    current = await get_nokos_list(nokos_id)
+
+    added, duplicate = [], []
+    for number in new_numbers:
+        if number in current:
+            duplicate.append(number)
+        else:
+            current.append(number)
+            added.append(number)
+
+    if added:
+        await save_nokos_list(nokos_id, current)
+
+    text = f"<b>✅ {nokos_label(nokos_id)} berhasil disimpan.</b>"
+    text += f"<blockquote>📦 Stok sekarang: <code>{len(current)}</code></blockquote>"
+    if added:
+        text += f"<b>➕ Ditambahkan:</b> <code>{', '.join(added)}</code>"
+    if duplicate:
+        text += f"<b>⚠️ Sudah ada:</b> <code>{', '.join(duplicate)}</code>"
+
+    await message.reply(text)
+
+
+async def stok_nokos_cmd(client, message):
+    user_id = message.from_user.id
+    if user_id != OWNER_ID:
+        return await message.reply("<b>❌ Perintah ini hanya untuk Owner.</b>")
+
+    lines = []
+    total = 0
+    for nokos_id in NOKOS_IDS:
+        numbers = await get_nokos_list(nokos_id)
+        total += len(numbers)
+        lines.append(
+            f"<b>{nokos_label(nokos_id)}</b>"
+            f"📦 Stok: <code>{len(numbers)}</code>"
+            f"📱 Nomor: <code>{', '.join(numbers) if numbers else 'Kosong'}</code>"
+        )
+
+    await message.reply(
+        "<b>📊 Stok Nokos</b>"
+        + "".join(lines)
+        + f"<b>Total semua stok:</b> <code>{total}</code>"
+    )
 
 
 async def kirim_nomor_nokos(client, user_id, nokos_id, number):
