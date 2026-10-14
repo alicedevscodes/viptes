@@ -80,9 +80,9 @@ PRODUCT_BY_PLAN = {
 #   nokos_id5 = "085555, 0855553"
 # ------------------------------------------------------------------
 
-nokos_id1 = [0811111, 0811112]
-nokos_id2 = [082222, 0822221]
-nokos_id5 = [085555, 0855553]
+nokos_id1 = "0811111, 0811112"
+nokos_id2 = "082222, 0822221"
+nokos_id5 = "085555, 0855553"
 
 NOKOS_OWNER = OWNER_ID                     # pemilik vars stok nokos
 NOKOS_IDS = ["nokos_id1", "nokos_id2", "nokos_id5"]  # id yang dijual
