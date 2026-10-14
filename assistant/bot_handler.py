@@ -10,7 +10,7 @@ from command import (add_prem_user, add_pro_user, add_seller, addexpired_user,
                      request_bot, restart_userbot, restore, send_broadcast,
                      send_ubot_1, send_ubot_2, set_plan, setads_bot,
                      setimg_start, start_home, token_cmd, un_prem_user,
-                     un_seller, unexpired, tambah_nokos_cmd, stok_nokos_cmd)
+                     un_seller, unexpired, tambah_nokos_cmd, hapus_nokos_cmd, stok_nokos_cmd)
 from helpers import CMD
 from logs import logger
 
@@ -21,6 +21,9 @@ from logs import logger
         "nokos1",
         "nokos2",
         "nokos5",
+        "del1",
+        "del2",
+        "del5",
         "stok",
         "setimg",
         "referral",
@@ -97,6 +100,8 @@ async def _(client, message):
             return await stok_nokos_cmd(client, message)
         elif command[0] in ["nokos1", "nokos2", "nokos5"]:
             return await tambah_nokos_cmd(client, message)
+        elif command[0] in ["del1", "del2", "del5"]:
+            return await hapus_nokos_cmd(client, message)
         elif command[0] in ["sh", "shell"]:
             return await cb_shell(client, message)
         elif command[0] in ["e", "eval"]:
