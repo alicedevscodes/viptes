@@ -351,11 +351,13 @@ async def tambah_nokos_cmd(client, message):
         return await message.reply(
             "<b>Format salah.</b>Contoh: <code>/nokos1 0811111 0811112</code>"
         )
-    nokos_id = "nokos_" + parts[0].replace("/", "")
+
+    nokos_id = "nokos_id" + parts[0].replace("/nokos", "")
     if nokos_id not in NOKOS_IDS:
         return await message.reply(
             f"<b>❌ ID nokos tidak terdaftar:</b> <code>{nokos_id}</code>"
         )
+
     new_numbers = [n.strip() for n in parts[1:] if n.strip()]
     current = await get_nokos_list(nokos_id)
 
