@@ -393,13 +393,13 @@ async def stok_nokos_cmd(client, message):
         numbers = await get_nokos_list(nokos_id)
         total += len(numbers)
         lines.append(
-            f"<b>{nokos_label(nokos_id)}</b>"
+            f"<b>{nokos_label(nokos_id)}</b>\n"
             f"📦 Stok: <code>{len(numbers)}</code>"
-            f"📱 Nomor: <code>{', '.join(numbers) if numbers else 'Kosong'}</code>"
+            f"📱 Nomor: <code>{', '.join(numbers) if numbers else 'Kosong'}</code>\n"
         )
 
     await message.reply(
-        "<b>📊 Stok Nokos</b>"
+        "<b>📊 Stok Nokos</b>\n"
         + "".join(lines)
         + f"<b>Total semua stok:</b> <code>{total}</code>"
     )
