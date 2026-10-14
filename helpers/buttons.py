@@ -423,7 +423,7 @@ class ButtonUtils:
                 ],
                 [
                     (
-                      ((" nokos"),
+                      ((" beli nokos"),
                      f"planusers nokos", ButtonStyle.PRIMARY, "5258397811329739167")
                     ),
                 ],
