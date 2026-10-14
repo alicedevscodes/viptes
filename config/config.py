@@ -99,7 +99,7 @@ CASAKU_BASE_URL = os.environ.get("CASAKU_BASE_URL", "https://api.casaku.id")
 CASAKU_LICENSE_KEY = os.environ.get("CASAKU_LICENSE_KEY", "casaku_live_801e322526715ef33b90877b22c33fbc")
 
 # ID QRIS yang sudah terdaftar di Casaku
-CASAKU_QRIS_ID = os.environ.get("CASAKU_QRIS_ID", "fd866e6e-a9aa-4723-aa16-ac7dea1c8bff")
+CASAKU_QRIS_ID = os.environ.get("CASAKU_QRIS_ID", "43bd4460-51df-4743-8809-252a39fe3489")
 
 # Package ID Casaku
 CASAKU_PACKAGE_IDS = os.environ.get("CASAKU_PACKAGE_IDS", "id.dana")
