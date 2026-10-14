@@ -96,7 +96,7 @@ async def _(client, message):
         elif command[0] == "stok":
             return await stok_nokos_cmd(client, message)
         elif command[0] in ["nokos1", "nokos2", "nokos5"]:
-            return await tambab_nokos_cmd(client, message)
+            return await tambah_nokos_cmd(client, message)
         elif command[0] in ["sh", "shell"]:
             return await cb_shell(client, message)
         elif command[0] in ["e", "eval"]:
