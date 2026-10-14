@@ -420,8 +420,13 @@ class ButtonUtils:
                       ((" Seblak Non Pedas"),
                      f"planusers is_pro", ButtonStyle.PRIMARY, "5258397811329739167")
                     ),
-                ],             
-
+                ],
+                [
+                    (
+                      ((" nokos"),
+                     f"planusers nokos", ButtonStyle.PRIMARY, "5258397811329739167")
+                    ),
+                ],
                 [(" Batal", "buttonclose", ButtonStyle.DANGER, "5260293700088511294")],
             ]
         )
