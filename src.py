@@ -1,6 +1,9 @@
 import asyncio
+
+import logging
 import os
 import random
+import re
 import socket
 import traceback
 from datetime import datetime
@@ -17,16 +20,70 @@ from pyrogram.errors import (AuthKeyDuplicated, AuthKeyUnregistered,
                              UserDeactivated, UserDeactivatedBan)
 from pytz import timezone
 
-from clients import UserBot, bot, navy
+from clients import UserBot, bot, alice
 from config import BOT_ID, LOG_SELLER, OWNER_ID, WAJIB_JOIN
 from database import dB
 from helpers import (AutoBC, AutoFW, CheckUsers, CleanAcces, ExpiredUser,
                      ReadUser, Tools, installPeer)
 from logs import logger
 
-asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
+
+
+# ---------------------------------------------------------------------------
+# WARNA LOG: prefix "AliceCore[INFO]:" jadi biru
+# ---------------------------------------------------------------------------
+LOG_BLUE = "\033[94m"      # nama "AliceCore". Biru lebih gelap: "\033[34m"
+LOG_RED = "\033[91m"       # tulisan "[INFO]". Merah lebih gelap: "\033[31m"
+LOG_RESET = "\033[0m"
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+_PREFIX_RE = re.compile(r"^AliceCore(\[INFO\]):")
+
+
+class BlueInfoFormatter(logging.Formatter):
+    """Membungkus formatter lama. Hanya log INFO dari logger 'AliceCore' yang
+    diubah: warna lama dibuang, 'AliceCore' jadi biru dan '[INFO]' jadi merah."""
+
+    def __init__(self, base):
+        super().__init__()
+        self.base = base
+
+    def format(self, record):
+        msg = self.base.format(record)
+        if record.name == "AliceCore" and record.levelno == logging.INFO:
+            clean = _ANSI_RE.sub("", msg)
+            m = _PREFIX_RE.match(clean)
+            if m:
+                return (
+                    f"{LOG_BLUE}AliceCore{LOG_RESET}"
+                    f"{LOG_RED}{m.group(1)}{LOG_RESET}"
+                    f":{clean[m.end():]}"
+                )
+        return msg
+
+
+def apply_blue_logs():
+    """Pasang formatter biru ke handler console. Aman dipanggil berulang."""
+    seen = set()
+    candidates = [logging.getLogger(), logging.getLogger("AliceCore")]
+    for lg in candidates:
+        for h in lg.handlers:
+            if id(h) in seen:
+                continue
+            seen.add(id(h))
+            # hanya console, file log tidak diberi kode warna
+            if isinstance(h, logging.FileHandler):
+                continue
+            if not isinstance(h, logging.StreamHandler):
+                continue
+            if isinstance(h.formatter, BlueInfoFormatter):
+                continue
+            h.setFormatter(BlueInfoFormatter(h.formatter or logging.Formatter()))
+
+
+apply_blue_logs()
 
 
 app = FastAPI()
@@ -137,9 +194,15 @@ async def handle_start_error():
 
 async def start_ubot(ubot):
     """Start a userbot instance and handle setup."""
+    from command import register_antiucast  # import di dalam fungsi, hindari circular import
+
     userbot = UserBot(**ubot)
     try:
         await userbot.start()
+        try:
+            register_antiucast(userbot)
+        except Exception:
+            logger.error(f"Antiucast gagal didaftarkan: {traceback.format_exc()}")
         for chat in WAJIB_JOIN:
             try:
                 await userbot.join_chat(chat)
@@ -163,8 +226,8 @@ async def start_main_bot():
     await bot.start()
     await bot.add_reseller()
     logger.info("✅ Main bot started successfully.")
-    total_bots = len(navy._ubot)
-    message = "🔥**Bot AutoPaymentVip Active**🔥\n**"
+    total_bots = len(alice._ubot)
+    message = "🔥**Bot berhasil diaktifkan**🔥\n" f"✅ **Total User: {total_bots}**"
     await dB.set_var(bot.id, "total_users", total_bots)
     try:
         await bot.send_message(OWNER_ID, f"<blockquote>{message}</blockquote>")
@@ -173,11 +236,11 @@ async def start_main_bot():
 
 
 async def start_userbots():
-    logger.info("🔄 Starting bot...")
+    logger.info("🔄 Starting userbots...")
     userbots = await dB.get_userbots()
     tasks = [asyncio.create_task(start_ubot(ubot)) for ubot in userbots]
     await asyncio.gather(*tasks, return_exceptions=False)
-    logger.info("✅ Bot AutoPaymentVip started successfully.")
+    logger.info("✅ All userbots started successfully.")
 
 
 async def task_2():
@@ -237,6 +300,7 @@ async def stop_main():
 
 async def main():
     try:
+        apply_blue_logs()   # jaga-jaga kalau handler log baru dibuat setelah import
         await dB.initialize()
         api_thread = Thread(target=start_api, daemon=True)
         api_thread.start()
