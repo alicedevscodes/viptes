@@ -20,7 +20,7 @@ from pyrogram.errors import (AuthKeyDuplicated, AuthKeyUnregistered,
                              UserDeactivated, UserDeactivatedBan)
 from pytz import timezone
 
-from clients import UserBot, bot, Navy
+from clients import UserBot, bot, navy
 from config import BOT_ID, LOG_SELLER, OWNER_ID, WAJIB_JOIN
 from database import dB
 from helpers import (AutoBC, AutoFW, CheckUsers, CleanAcces, ExpiredUser,
