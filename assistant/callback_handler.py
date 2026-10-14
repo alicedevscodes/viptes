@@ -15,7 +15,7 @@ from command import (apkinfocb, basic_plugins, bola_date, bola_matches,
                      rest_donghua, restart_userbot, select_model,
                      sosmed_callback, start_home, token_cmd, tools_referral,
                      tools_token, tools_userbot, update_kode, use_referral,
-                     user_aggre, viewchord, viewlyric)
+                     user_aggre, viewchord, viewlyric, pilih_nokos)
 from helpers import CMD, trigger
 from logs import logger
 
