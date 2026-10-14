@@ -45,10 +45,10 @@ transactions = {}
 waktu_jkt = timezone("Asia/Jakarta")
 
 PRICES = {
-    "basic": 10,
-    "pro": 10,
+    "basic": 5,
+    "pro": 5,
 }
-QRIS_EXPIRE_MINUTES = 10
+QRIS_EXPIRE_MINUTES = 5
 POLL_INTERVAL = 4
 PAID_STATUSES = ("paid", "success", "settlement", "completed", "lunas")
 INVITE_EXPIRE_MINUTES = 10  # masa berlaku link channel, setelah itu di-revoke
