@@ -59,6 +59,36 @@ VIP_CHANNELS = {
     "pro": VIP_CHANNEL_PRO,
 }
 
+# ------------------------------------------------------------------
+# [BARU] JENIS PRODUK PER PLAN
+# "vip"  -> hanya kirim link channel (TANPA tombol Mulai Buat Userbot)
+# "ubot" -> perilaku lama (tombol Mulai Buat Userbot tetap muncul)
+# Plan yang tidak terdaftar dianggap "vip".
+# Kalau ada plan khusus userbot, daftarkan di sini, contoh: "ubot": "ubot"
+# ------------------------------------------------------------------
+PRODUCT_BY_PLAN = {
+    "basic": "vip",
+    "pro": "vip",
+    "is_pro": "vip",
+}
+
+# ------------------------------------------------------------------
+# [BARU] KONFIGURASI NOKOS (nomor kosong)
+# Stok disimpan di vars (database), satu var per id:
+#   nokos_id1 = "0811111, 0811112"
+#   nokos_id2 = "082222, 0822221"
+#   nokos_id5 = "085555, 0855553"
+# ------------------------------------------------------------------
+NOKOS_OWNER = OWNER_ID                     # pemilik vars stok nokos
+NOKOS_IDS = ["nokos_id1", "nokos_id2", "nokos_id5"]  # id yang dijual
+NOKOS_DEFAULT_PRICE = 5                    # harga default per nomor
+NOKOS_PRICES = {                           # harga khusus per id (opsional)
+    # "nokos_id2": 7000,
+}
+
+nokos_lock = asyncio.Lock()
+reserved_nokos = {}  # nomor -> user_id (sedang dibayar, supaya tidak dobel jual)
+
 _http_client = None
 
 
@@ -195,6 +225,11 @@ def get_price(plan, month):
     return PRICES[normalize_plan(plan)] * month
 
 
+# [BARU] tentukan jenis produk dari plan ("vip" / "ubot")
+def get_product(plan):
+    return PRODUCT_BY_PLAN.get(str(plan).lower(), "vip")
+
+
 async def notify_admin(client, text):
     try:
         await client.send_message(LOG_SELLER, f"<b>⚠️ Casaku:</b> {text}")
@@ -224,6 +259,95 @@ async def _delete_qr_message(client, chat_id, message_id):
         await client.delete_messages(chat_id=chat_id, message_ids=message_id)
     except Exception:
         pass
+
+
+# ------------------------------------------------------------------
+# [BARU] HELPER STOK NOKOS (vars)
+# CATATAN: sesuaikan dB.get_var / dB.set_var di 2 fungsi paling atas
+# kalau signature di database kamu berbeda.
+# ------------------------------------------------------------------
+def nokos_label(nokos_id):
+    return "Nokos " + str(nokos_id).replace("nokos_id", "ID ")
+
+
+def get_nokos_price(nokos_id):
+    return int(NOKOS_PRICES.get(nokos_id, NOKOS_DEFAULT_PRICE))
+
+
+async def get_nokos_list(nokos_id):
+    """Baca semua nomor di var nokos_idX -> list."""
+    raw = await dB.get_var(NOKOS_OWNER, nokos_id)
+    raw = str(raw or "").replace("\n", ",")
+    return [n.strip() for n in raw.split(",") if n.strip()]
+
+
+async def save_nokos_list(nokos_id, numbers):
+    await dB.set_var(NOKOS_OWNER, nokos_id, ", ".join(numbers))
+
+
+async def get_available_nokos(nokos_id):
+    """Nomor yang masih bisa dijual (tidak sedang dipesan orang lain)."""
+    numbers = await get_nokos_list(nokos_id)
+    return [n for n in numbers if n not in reserved_nokos]
+
+
+async def reserve_nokos(nokos_id, user_id):
+    """Booking 1 nomor selama pembayaran berlangsung (belum dihapus dari vars)."""
+    async with nokos_lock:
+        for number in await get_nokos_list(nokos_id):
+            if number not in reserved_nokos:
+                reserved_nokos[number] = user_id
+                return number
+    return None
+
+
+def release_nokos(number):
+    """Batalkan booking (transaksi batal/expired/error)."""
+    if number:
+        reserved_nokos.pop(number, None)
+
+
+async def sell_nokos(nokos_id, number):
+    """Nomor terjual -> hapus dari vars."""
+    async with nokos_lock:
+        numbers = await get_nokos_list(nokos_id)
+        if number in numbers:
+            numbers.remove(number)
+            await save_nokos_list(nokos_id, numbers)
+        reserved_nokos.pop(number, None)
+
+
+async def take_nokos(nokos_id):
+    """Ambil 1 nomor langsung dari vars (dipakai tombol manual admin)."""
+    async with nokos_lock:
+        numbers = await get_nokos_list(nokos_id)
+        for number in numbers:
+            if number not in reserved_nokos:
+                numbers.remove(number)
+                await save_nokos_list(nokos_id, numbers)
+                return number
+    return None
+
+
+async def restock_nokos(nokos_id, number):
+    """Kembalikan nomor ke vars (kalau gagal kirim ke pembeli)."""
+    async with nokos_lock:
+        numbers = await get_nokos_list(nokos_id)
+        if number not in numbers:
+            numbers.append(number)
+            await save_nokos_list(nokos_id, numbers)
+
+
+async def kirim_nomor_nokos(client, user_id, nokos_id, number):
+    await client.send_message(
+        user_id,
+        f"""<b>✅ Pembayaran Berhasil</b>
+
+<blockquote><b>Produk: {nokos_label(nokos_id)}
+📱 Nomor: <code>{number}</code></b></blockquote>
+
+<blockquote><b>Simpan nomor di atas. Jika butuh bantuan, hubungi admin.</b></blockquote>""",
+    )
 
 
 # ------------------------------------------------------------------
@@ -410,6 +534,11 @@ async def chose_plan(client, callback_query):
     await callback_query.message.delete()
     user_id = callback_query.from_user.id
     plan = str(callback_query.data.split()[1])
+
+    # [BARU] produk nokos -> arahkan ke pilihan id nokos
+    if plan == "nokos":
+        return await tampil_pilihan_nokos(client, user_id)
+
     buttons = ButtonUtils.plus_minus(0, 0, plan)
     return await client.send_message(
         user_id,
@@ -417,6 +546,274 @@ async def chose_plan(client, callback_query):
         disable_web_page_preview=True,
         reply_markup=buttons,
     )
+
+
+# ------------------------------------------------------------------
+# [BARU] PILIH ID NOKOS (buyer)
+# callback_data:
+#   "pilihnokos <nokos_idX>"  -> pilih_nokos
+#   "buynokos <nokos_idX>"    -> beli_nokos
+# ------------------------------------------------------------------
+async def tampil_pilihan_nokos(client, user_id):
+    rows = []
+    for nokos_id in NOKOS_IDS:
+        stok = len(await get_available_nokos(nokos_id))
+        status = f"Stok {stok}" if stok else "Habis"
+        label = f"📱 {nokos_label(nokos_id)} • {Message.format_rupiah(get_nokos_price(nokos_id))} • {status}"
+        rows.append([InlineKeyboardButton(label, callback_data=f"pilihnokos {nokos_id}")])
+    rows.append([InlineKeyboardButton("❌ Batal", callback_data="buttonclose")])
+
+    return await client.send_message(
+        user_id,
+        "<b>📱 Pilih ID Nokos</b>\n<blockquote><b>Pilih ID nokos yang ingin kamu beli.</b></blockquote>",
+        reply_markup=InlineKeyboardMarkup(rows),
+    )
+
+
+async def pilih_nokos(client, callback_query):
+    data = callback_query.data.split()
+    nokos_id = data[1] if len(data) > 1 else ""
+    if nokos_id not in NOKOS_IDS:
+        return await callback_query.answer("ID nokos tidak valid.", show_alert=True)
+
+    stok = len(await get_available_nokos(nokos_id))
+    if stok <= 0:
+        return await callback_query.answer("Stok nokos ini sedang habis.", show_alert=True)
+
+    await callback_query.answer()
+    price = get_nokos_price(nokos_id)
+    await callback_query.edit_message_text(
+        f"""<b>📱 {nokos_label(nokos_id)}</b>
+
+<blockquote><b>💵 Harga: <code>{Message.format_rupiah(price)}</code>
+📦 Stok: <code>{stok}</code></b></blockquote>
+
+<b>Lanjutkan pembelian?</b>""",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("✅ Beli Sekarang", callback_data=f"buynokos {nokos_id}")],
+                [InlineKeyboardButton("⬅️ Kembali", callback_data="planusers nokos")],
+            ]
+        ),
+    )
+
+
+async def beli_nokos(client, callback_query):
+    await callback_query.answer()
+    data = callback_query.data.split()
+    user_id = callback_query.from_user.id
+    nokos_id = data[1] if len(data) > 1 else ""
+
+    if nokos_id not in NOKOS_IDS:
+        return await client.send_message(user_id, "<b>ID nokos tidak valid.</b>")
+
+    try:
+        await callback_query.message.delete()
+    except Exception:
+        pass
+
+    if user_id in transactions:
+        return await client.send_message(
+            user_id,
+            "**__📑 You still have a pending transaction.__**",
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("❌ Cancel", callback_data="batal_payment")]]
+            ),
+        )
+
+    amount = get_nokos_price(nokos_id)
+    if amount <= 0:
+        return await client.send_message(user_id, "<b>The price cannot be 0.</b>")
+
+    # booking 1 nomor selama pembayaran berlangsung
+    number = await reserve_nokos(nokos_id, user_id)
+    if not number:
+        return await client.send_message(
+            user_id, "<b>❌ Stok nokos ini sudah habis.</b>"
+        )
+
+    loading = await client.send_message(
+        user_id, "<b><i>Memproses Pembayaran QRIS...</i></b>"
+    )
+    qris_path = None
+    tid = None
+    bukti_task = None
+    paid = False
+    try:
+        try:
+            trx = await generate_qris(amount, QRIS_EXPIRE_MINUTES)
+        except CasakuError as e:
+            logger.error(f"Casaku generate error (nokos): {e}")
+            await loading.delete()
+            if e.status in (401, 403, 429, 0, 408):
+                await notify_admin(client, e.admin_message)
+            return await client.send_message(user_id, f"<b>❌ {e.user_message}</b>")
+
+        tid = trx["transactionId"]
+        total_price = int(trx["totalAmount"])
+        expired_min = int(trx.get("expiredInMinutes", QRIS_EXPIRE_MINUTES))
+        payment_url = trx.get("payment_url")
+        item_name = nokos_label(nokos_id)
+
+        qris_path = f"qris_{user_id}_{tid[:8]}.png"
+        await make_qr_image(trx["qr_string"], qris_path)
+
+        now = datetime.now(waktu_jkt)
+        expire_time = now + timedelta(minutes=expired_min)
+
+        buttons = []
+        if payment_url:
+            buttons.append(
+                [InlineKeyboardButton("📑 Buka Halaman Pembayaran", url=payment_url)]
+            )
+        buttons.append([InlineKeyboardButton("❌ Cancel", callback_data="batal_payment")])
+
+        await loading.delete()
+        sent_msg = await client.send_photo(
+            user_id,
+            qris_path,
+            caption=f"""
+<b>💳 SCAN QRIS UNTUK MEMBELI</b>
+<blockquote><b>
+📦 Item: <code>{item_name}</code>
+💵 Harga: <code>{Message.format_rupiah(amount)}</code>
+💰 Total Bayar: <code>{Message.format_rupiah(total_price)}</code>
+⏰ Berlaku sampai: <code>{expire_time.strftime('%H:%M')}</code>
+
+⚠️ Bayar sesuai Total Bayar (termasuk kode unik). Pembayaran terdeteksi otomatis.
+</b></blockquote>
+<blockquote>© Auto Payment By: @{client.me.username}</blockquote>
+""",
+            reply_markup=InlineKeyboardMarkup(buttons),
+        )
+
+        transactions[user_id] = {
+            "transaction_id": tid,
+            "qris_path": qris_path,
+            "message_id": sent_msg.id,
+            "chat_id": user_id,
+        }
+
+        def still_active():
+            return transactions.get(user_id, {}).get("transaction_id") == tid
+
+        # Minta bukti di background (untuk pemberian manual oleh admin)
+        async def minta_bukti():
+            try:
+                bukti = await client.ask(
+                    user_id,
+                    "<b>🧾 Silakan kirimkan bukti pembayaran yang sudah Anda lakukan</b>",
+                    filters=filters.photo,
+                    timeout=expired_min * 60,
+                )
+                copied = await bukti.copy(
+                    LOG_SELLER,
+                    caption=(
+                        f"<b>🧾 Bukti pembayaran NOKOS</b>\n\n"
+                        f"User: <code>{user_id}</code>\n"
+                        f"Item: {item_name}\n"
+                        f"Harga: {Message.format_rupiah(amount)}"
+                    ),
+                    reply_markup=ikb(
+                        [
+                            [
+                                (" Kasih Nokos", f"nokos {user_id} {client.me.username} {nokos_id}", ButtonStyle.PRIMARY),
+                            ],
+                        ]
+                    ),
+                )
+                await dB.set_var(copied.id, f"FORWARD_{copied.id}", user_id)
+                await client.send_message(
+                    user_id,
+                    "<b>✅ Bukti pembayaran terkirim, tunggu admin memproses.</b>",
+                )
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.error(f"Error kirim bukti nokos: {e}")
+
+        bukti_task = asyncio.create_task(minta_bukti())
+
+        try:
+            status = await wait_for_payment(tid, expired_min, still_active)
+        except CasakuError as e:
+            bukti_task.cancel()
+            logger.error(f"Casaku polling error (nokos): {e}")
+            await notify_admin(client, f"Polling gagal untuk {tid}: {e.admin_message}")
+            if still_active():
+                await _delete_qr_message(client, sent_msg.chat.id, sent_msg.id)
+                del transactions[user_id]
+            return await client.send_message(
+                user_id,
+                "<b>⚠️ Gagal mengecek pembayaran. Jika sudah membayar, hubungi admin dengan menyertakan bukti transfer.</b>",
+            )
+
+        bukti_task.cancel()
+
+        if status == "cancelled":
+            return
+
+        if still_active():
+            del transactions[user_id]
+        await _delete_qr_message(client, sent_msg.chat.id, sent_msg.id)
+
+        if status == "paid":
+            paid = True
+            # nomor terjual -> hapus dari vars
+            await sell_nokos(nokos_id, number)
+
+            await client.send_message(
+                LOG_SELLER,
+                f"""
+<b>📝「 Payment Successfully 」</b>
+
+<blockquote><b><i>👤 User Name: <code>{callback_query.from_user.first_name}</code>
+🆔 User ID: <code>{str(user_id)[:3]}######</code>
+📦 Item: <code>{item_name}</code>
+📱 Nomor: <code>{number}</code>
+💵 Price: <code>{Message.format_rupiah(amount)}</code>
+💰 Paid: <code>{Message.format_rupiah(total_price)}</code>
+🧾 Trx: <code>{tid}</code>
+📅 Date: <code>{now.strftime('%d-%m-%Y')}</code>
+⏰ Time: <code>{datetime.now(waktu_jkt).strftime('%H:%M')}</code></i></b></blockquote>
+
+<blockquote>© Auto Payment @{client.me.username}</blockquote>
+""",
+            )
+
+            # kirim nomornya otomatis ke pembeli
+            try:
+                await kirim_nomor_nokos(client, user_id, nokos_id, number)
+            except Exception as e:
+                logger.error(f"Gagal kirim nokos: {traceback.format_exc()}")
+                await notify_admin(
+                    client,
+                    f"Gagal kirim nomor <code>{number}</code> ({item_name}) ke <code>{user_id}</code>: {e}. Kirim manual.",
+                )
+                await client.send_message(
+                    user_id,
+                    "<b>⚠️ Nomor gagal dikirim otomatis, admin akan mengirimkannya manual.</b>",
+                )
+        else:
+            await client.send_message(
+                user_id,
+                "<b>⌛ Waktu pembayaran habis atau transaksi dibatalkan. Silakan buat transaksi baru.</b>",
+            )
+
+    except Exception:
+        logger.error(f"ERROR beli_nokos: {traceback.format_exc()}")
+        if bukti_task:
+            bukti_task.cancel()
+        if transactions.get(user_id, {}).get("transaction_id") == tid:
+            transactions.pop(user_id, None)
+        await client.send_message(
+            user_id, "<b>An error occurred, please try again.</b>"
+        )
+    finally:
+        # kalau tidak jadi terbayar, lepas booking nomor supaya bisa dijual lagi
+        if not paid:
+            release_nokos(number)
+        _remove_file(qris_path)
 
 
 async def kurang_tambah(client, callback_query):
@@ -627,15 +1024,19 @@ async def confirm_pay(client: Message, callback_query):
             await add_transaction(user_id, month, plan)
             if user_id not in AKSES_DEPLOY:
                 AKSES_DEPLOY.append(user_id)
-            await client.send_message(
-                user_id,
-                "<b><i>✅ Payment successful.\nClick the button below to create your UserBot.</i></b>",
-                reply_markup=ReplyKeyboardMarkup(
-                    [[KeyboardButton("✨ Mulai Buat Userbot")]],
-                    resize_keyboard=True,
-                    one_time_keyboard=True,
-                ),
-            )
+
+            # [UBAH] tombol "Mulai Buat Userbot" HANYA muncul untuk produk userbot.
+            # Pembelian channel VIP tidak lagi menampilkan tombol ini.
+            if get_product(plan) == "ubot":
+                await client.send_message(
+                    user_id,
+                    "<b><i>✅ Payment successful.\nClick the button below to create your UserBot.</i></b>",
+                    reply_markup=ReplyKeyboardMarkup(
+                        [[KeyboardButton("✨ Mulai Buat Userbot")]],
+                        resize_keyboard=True,
+                        one_time_keyboard=True,
+                    ),
+                )
 
             # Kirim link channel private sekali klik (auto revoke setelah expired)
             try:
@@ -737,6 +1138,39 @@ async def kasih_ubot(client, callback_query):
     )
     await callback_query.message.edit(
         f"<b>✅ Akses {PLAN} ({month} bulan) telah diberikan ke user <code>{user_ids}</code>.</b>"
+    )
+
+
+# [BARU] Tombol admin "Kasih Nokos": ambil 1 nomor dari vars lalu kirim ke pembeli
+async def kasih_nokos(client, callback_query):
+    data = callback_query.data.split()
+    if len(data) < 4:
+        return await callback_query.answer(
+            "ID nokos tidak ada di tombol ini (bukti lama).", show_alert=True
+        )
+    user_ids = int(data[1])
+    nokos_id = data[3]
+
+    if nokos_id not in NOKOS_IDS:
+        return await callback_query.answer("ID nokos tidak valid.", show_alert=True)
+
+    number = await take_nokos(nokos_id)
+    if not number:
+        return await callback_query.answer(
+            f"Stok {nokos_label(nokos_id)} habis.", show_alert=True
+        )
+
+    try:
+        await kirim_nomor_nokos(client, user_ids, nokos_id, number)
+    except Exception as e:
+        logger.error(f"ERROR kasih_nokos: {traceback.format_exc()}")
+        await restock_nokos(nokos_id, number)  # kembalikan ke vars
+        return await callback_query.answer(
+            f"Gagal kirim nomor: {e}", show_alert=True
+        )
+
+    await callback_query.message.edit(
+        f"**✅ {nokos_label(nokos_id)} ({number}) sudah dikirim ke pembeli**"
     )
 
 
