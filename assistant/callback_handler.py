@@ -135,6 +135,8 @@ async def _(client, callback):
             return await kasih_vip(client, callback)
         elif query.startswith("ubot"):
             return await kasih_ubot(client, callback)
+        elif query.startswith("nokos"):
+            return await kasih_nokos(client, callback)
         elif query == ("batal_payment"):
             return await cancel_payment(client, callback)
 
