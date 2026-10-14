@@ -10,7 +10,7 @@ from command import (add_prem_user, add_pro_user, add_seller, addexpired_user,
                      request_bot, restart_userbot, restore, send_broadcast,
                      send_ubot_1, send_ubot_2, set_plan, setads_bot,
                      setimg_start, start_home, token_cmd, un_prem_user,
-                     un_seller, unexpired, tambab_nokos_cmd, stok_nokos_cmd)
+                     un_seller, unexpired, tambah_nokos_cmd, stok_nokos_cmd)
 from helpers import CMD
 from logs import logger
 
