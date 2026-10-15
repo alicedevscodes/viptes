@@ -249,7 +249,7 @@ async def _delete_qr_message(client, chat_id, message_id):
 
 
 def nokos_label(nokos_id):
-    return "Nokos " + str(nokos_id).replace("nokos_id", "ID ")
+    return " " + str(nokos_id).replace("nokos_id", "ID ")
 
 
 def get_nokos_price(nokos_id):
@@ -527,7 +527,7 @@ def menu_blocks():
         table(
             [
                 [
-                    cell(["AliceDevs Core v3.14 ", emo(5456140674028019486, "⚡")], align="center", is_header=True),
+                    cell(["AliceDevs Core v3.37 ", emo(5456140674028019486, "⚡")], align="center", is_header=True),
                 ],
             ],
             bordered=True,
@@ -643,7 +643,7 @@ async def user_aggre(client, callback_query):
                 [
                     cell(
                         [
-                            "AliceDevs Core v3.14 ",
+                            "AliceDevs Core v3.37 ",
                             emo(5456140674028019486, "⚡"),
                         ],
                         align="center",
@@ -693,7 +693,7 @@ async def tampil_pilihan_nokos(client, user_id):
     for nokos_id in NOKOS_IDS:
         stok = len(await get_available_nokos(nokos_id))
         status = f"Stok {stok}" if stok else "Habis"
-        label = f"📱 {nokos_label(nokos_id)} • {status}"
+        label = f"📱 {nokos_label(nokos_id)}"
         rows.append([InlineKeyboardButton(label, callback_data=f"pilihnokos {nokos_id}")])
     rows.append([InlineKeyboardButton("❌ Batal", callback_data="planusers back")])
 
