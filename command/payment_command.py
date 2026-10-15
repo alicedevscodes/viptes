@@ -693,13 +693,13 @@ async def tampil_pilihan_nokos(client, user_id):
     for nokos_id in NOKOS_IDS:
         stok = len(await get_available_nokos(nokos_id))
         status = f"Stok {stok}" if stok else "Habis"
-        label = f"📱 {nokos_label(nokos_id)} • {Message.format_rupiah(get_nokos_price(nokos_id))} • {status}"
+        label = f"📱 {nokos_label(nokos_id)} • {status}"
         rows.append([InlineKeyboardButton(label, callback_data=f"pilihnokos {nokos_id}")])
     rows.append([InlineKeyboardButton("❌ Batal", callback_data="planusers back")])
 
     return await client.send_message(
         user_id,
-        "<b>📱 Pilih ID Nokos</b>\n<blockquote><b>Pilih ID nokos yang ingin kamu beli.</b></blockquote>",
+        f"<b>📱 Pilih ID Nokos</b>\n<blockquote><b>Harga nokos:\n{message.format_rupiah(get_nokk_price(nokos_id)}.</b></blockquote>",
         reply_markup=InlineKeyboardMarkup(rows),
     )
 
@@ -725,8 +725,8 @@ async def pilih_nokos(client, callback_query):
 <b>Lanjutkan pembelian?</b>""",
         reply_markup=InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("✅ Beli Sekarang", callback_data=f"buynokos {nokos_id}")],
-                [InlineKeyboardButton("⬅️ Kembali", callback_data="planusers nokos")],
+                [ikb((" Beli Sekarang"), f"buynokos {nokos_id}", ButtonStyle.PRIMARY, "5373052667671093676")],
+                [ikb(("⬅️ Kembali"), "planusers nokos", ButtonStyle.DANGER, "5373052667671093676")],
             ]
         ),
     )
