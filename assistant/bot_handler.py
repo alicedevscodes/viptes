@@ -22,9 +22,11 @@ from logs import logger
         "nokos1",
         "nokos2",
         "nokos5",
-        "del1",
-        "del2",
-        "del5",
+        "nokos6",
+        "nokos7",
+        "nokos8",
+        "nokos9",
+        "del",
         "stok",
         "addnf",
         "delnf",
@@ -102,9 +104,9 @@ async def _(client, message):
             return await backup(client, message)
         elif command[0] == "stok":
             return await stok_nokos_cmd(client, message)
-        elif command[0] in ["nokos1", "nokos2", "nokos5"]:
+        elif command[0] in ["nokos1", "nokos2", "nokos5", "nokos6", "nokos7", "nokos8", "nokos9"]:
             return await tambah_nokos_cmd(client, message)
-        elif command[0] in ["del1", "del2", "del5"]:
+        elif command[0] == "del":
             return await hapus_nokos_cmd(client, message)
         elif command[0] in ["addnf", "delnf", "stoknf"]:
             return await nf_cmd(client, message)
