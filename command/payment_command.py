@@ -360,7 +360,7 @@ async def tambah_nokos_cmd(client, message):
     text = f"<b>✅ {nokos_label(nokos_id)} berhasil disimpan.</b>"
     text += f"<blockquote>📦 Stok sekarang: <code>{len(current)}</code></blockquote>"
     if added:
-        text += f"<b>➕ Ditambahkan:</b> <code>{', '.join(added)}</code>"
+        text += f"<b>➕ Ditambahkan:</b> <code>{', '.join(added)}</code>\n"
     if duplicate:
         text += f"<b>⚠️ Sudah ada:</b> <code>{', '.join(duplicate)}</code>"
 
@@ -417,7 +417,7 @@ async def stok_nokos_cmd(client, message):
     await message.reply(
         "<b>📊 Stok Nokos</b>\n"
         + "".join(lines)
-        + f"<b>Total semua stok:</b> <code>{total}</code>"
+        + f"\n<b>Total semua stok:</b> <code>{total}</code>"
     )
 
 
