@@ -248,7 +248,7 @@ async def pay2_menu(client, user_id, plan):
             f"{PAKET} Stok: <code>{stok or 'Habis'}</code></b></blockquote>",
             reply_markup=kb(rows + [[BATAL]]))
 
-        if plan == "suntik":
+    if plan == "suntik":
         # Gunakan callback 'contact_admin_suntik'
         return await client.send_message(
             user_id,
