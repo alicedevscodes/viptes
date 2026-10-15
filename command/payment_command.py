@@ -486,6 +486,61 @@ Klik tombol di bawah untuk masuk ke channel private.
     )
     return invite_link
 
+def menu_blocks():
+    return (
+        heading(
+            [
+                emo(5373052667671093676, "💎"),
+                " Seblak Ultra Pedasss",
+            ],
+            3,
+        ),
+        divider(),
+        table(
+            [
+                [
+                    cell([emo(5258397811329739167, "💎"), " SEBLAK DINGIN"], is_header=True, align="center"),
+                    cell([emo(5458908492687497206, "💎"), " ULTRA PEDAS MENCRET"], is_header=True, align="center"),
+                ],
+                [
+                    cell("Rasa"),
+                    cell([emo(5372824841130879657, "✅"), " Ga enak"], align="center"),
+                ],
+                [
+                    cell("Gratis"),
+                    cell([emo(5258190433128834075, "✅"), " Tidak"], align="center"),
+                ],
+                [
+                    cell("Efek Mencret"),
+                    cell([emo(5456140674028019486, "✅"), " Iya"], align="center"),
+                ],
+                [
+                    cell("Harga per bulan"),
+                    cell([emo(5269720586367542578, "💰"), " Rp10.000.000.000"], align="center"),
+                ],
+            ],
+            bordered=True,
+            striped=True,
+            compact=True,
+        ),
+        divider(),
+        table(
+            [
+                [
+                    cell(["AliceDevs Core v3.14 ", emo(5456140674028019486, "⚡")], align="center", is_header=True),
+                ],
+            ],
+            bordered=True,
+            striped=True,
+            compact=True,
+        ),
+        footer(
+            [
+                emo(6114074516395134769, "⚠️"),
+                " Seblak pedas dapat menyebabkan mencret-mencret.",
+            ]
+        ),
+    )
 
 async def user_aggre(client, callback_query):
     await callback_query.answer()
