@@ -42,11 +42,19 @@ from logs import logger
 
 # style + custom emoji tombol/teks nokos (spasi di depan teks tombol = tempat emoji)
 P, S, D = ButtonStyle.PRIMARY, ButtonStyle.SUCCESS, ButtonStyle.DANGER
-E_NOKOS = "5357421984600833714"
-E_HARGA = "5461139036708033234"
-E_PAKET = "5231391525123934586"
-E_BELI = "6269136309093143551"
+E_PRIMARY = "5373052667671093676"
+E_OK = "6296367896398399651"
 E_BATAL = "5260293700088511294"
+E_ITEM = "5258397811329739167"
+E_STARS = "6255759783773605832"
+E_HARGA = "5461139036708033234"
+E_PREM = "6298747815086524010"
+E_PAKET = "5231391525123934586"
+E_NETFLIX = "5318911503938634641"
+E_BELI = "6269136309093143551"
+E_PLUS = "5226945370684140473"
+E_MINUS = "5229113891081956317"
+
 
 
 def ce(emoji_id, fallback):
@@ -356,14 +364,14 @@ async def tambah_nokos_cmd(client, message):
     parts = message.text.split()
     if len(parts) < 3 or not parts[1].isdigit():
         return await message.reply(
-            f"{I_SALAH} <b>Format salah.</b>"
-            f"{I_PAKET} Contoh: <code>/addnokos 1 0822222</code>"
-            f"{I_PAKET} Bisa beberapa: <code>/addnokos 1 0822222 0833333</code>"
+            f"{E_SALAH} <b>Format salah.</b>"
+            f"{E_PAKET} Contoh: <code>/addnokos 1 0822222</code>"
+            f"{E_PAKET} Bisa beberapa: <code>/addnokos 1 0822222 0833333</code>"
         )
     nokos_id = f"nokos_id{parts[1]}"
     if nokos_id not in NOKOS_IDS:
         return await message.reply(
-            f"{I_SALAH} <b>ID nokos tidak terdaftar:</b> <code>{nokos_id}</code>"
+            f"{E_SALAH} <b>ID nokos tidak terdaftar:</b> <code>{nokos_id}</code>"
         )
     new_numbers = [n.strip() for n in parts[2:] if n.strip()]
     current = await get_nokos_list(nokos_id)
@@ -376,12 +384,12 @@ async def tambah_nokos_cmd(client, message):
             added.append(number)
     if added:
         await save_nokos_list(nokos_id, current)
-    text = f"{I_NOKOS} <b>{nokos_label(nokos_id)} berhasil disimpan.</b>"
-    text += f"{I_PAKET} <b>Stok sekarang:</b> <code>{len(current)}</code>"
+    text = f"{E_NOKOS} <b>{nokos_label(nokos_id)} berhasil disimpan.</b>"
+    text += f"{E_PAKET} <b>Stok sekarang:</b> <code>{len(current)}</code>"
     if added:
-        text += f"{I_TAMBAH} <b>Ditambahkan:</b> <code>{', '.join(added)}</code>"
+        text += f"{E_PLUS} <b>Ditambahkan:</b> <code>{', '.join(added)}</code>"
     if duplicate:
-        text += f"{I_SALAH} <b>Sudah ada:</b> <code>{', '.join(duplicate)}</code>"
+        text += f"{E_SALAH} <b>Sudah ada:</b> <code>{', '.join(duplicate)}</code>"
     await message.reply(text)
 
   
