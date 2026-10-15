@@ -66,11 +66,17 @@ PRODUCT_BY_PLAN = {
 }
 
 
-NOKOS_OWNER = OWNER_ID                     # pemilik vars stok nokos
-NOKOS_IDS = ["nokos_id1", "nokos_id2", "nokos_id5"]  # id yang dijual
-NOKOS_DEFAULT_PRICE = 5                    # harga default per nomor
-NOKOS_PRICES = {                           # harga khusus per id (opsional)
-    # "nokos_id2": 7000,
+NOKOS_OWNER = OWNER_ID        # pemilik vars stok nokos
+NOKOS_IDS = ["nokos_id1", "nokos_id2", "nokos_id5", "nokos_id6", "nokos_id7", "nokos_id8", "nokos_id9"]  # id yang dijual
+NOKOS_DEFAULT_PRICE = 5          
+NOKOS_PRICES = { 
+  "nokos_id1": 1,
+  "nokos_id2": 2,
+  "nokos_id5": 5,
+  "nokos_id6": 6,
+  "nokos_id7": 7,
+  "nokos_id8": 8,
+  "nokos_id9": 9,
 }
 
 nokos_lock = asyncio.Lock()
