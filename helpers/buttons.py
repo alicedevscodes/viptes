@@ -428,12 +428,12 @@ class ButtonUtils:
                     ),
                 ],
                 [
-                    (" Telegram Premium", "planusers telprem", ButtonStyle.PRIMARY, "5373052667671093676"),
-                    (" Stars", "planusers stars", ButtonStyle.PRIMARY, "5258397811329739167"),
+                    (" Telegram Premium", "planusers telprem", ButtonStyle.PRIMARY, "6298747815086524010"),
+                    (" Stars", "planusers stars", ButtonStyle.PRIMARY, "6255759783773605832"),
                 ],
                 [
-                    (" Netflix", "planusers netflix", ButtonStyle.DANGER, "5458908492687497206"),
-                    (" Suntik GC/CH", "planusers suntik", ButtonStyle.SUCCESS, "6296367896398399651"),
+                    (" Netflix", "planusers netflix", ButtonStyle.DANGER, "5318911503938634641"),
+                    (" Suntik GC/CH", "planusers suntik", ButtonStyle.SUCCESS, "5231391525123934586"),
                 ],
                 [(" Batal", "buttonclose", ButtonStyle.DANGER, "5260293700088511294")],
             ]
