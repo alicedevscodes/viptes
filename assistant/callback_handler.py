@@ -74,13 +74,13 @@ async def _(client, callback):
         if query == "contact_admin_suntik":
             await callback.answer()
             return await contact_admins(client, callback)
-        elif query.startswith("jawab"):
+        elif query.startswith("jawab_pesan"):
             return await jawab_pesan(client, callback)
-        elif query.startswith("batal"):
+        elif query.startswith("batal "):
             return await batal_pesan(client, callback)
         elif query.startswith("profil"):
             return await profil_user(client, callback)
-            
+
         if query == "buttonclose":
             return await closed_bot(client, callback)
         elif query.startswith("close"):
