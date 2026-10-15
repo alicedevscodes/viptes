@@ -24,7 +24,7 @@ from pyrogram.types import (InlineKeyboardMarkup, InputMediaAnimation,
 from pyrogram.utils import unpack_inline_message_id
 from pytz import timezone
 from html import escape
-from clients import bot, alice
+from clients import bot, navy
 from config import (API_BOTCHAX, OWNER_ID, API_MAELYN, BOT_NAME, COPY_ID, HELPABLE,
                     LOG_SELLER, LOG_SUPPORT, SUDO_OWNERS, USENAME_OWNER)
 from database import dB, state
