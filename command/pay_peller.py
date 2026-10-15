@@ -248,11 +248,11 @@ async def pay2_menu(client, user_id, plan):
             reply_markup=kb(rows + [[BATAL]]))
 
     if plan == "suntik":
+        # Perubahan: Menggunakan callback 'contact_admin_suntik' untuk memicu fungsi contact_admins
         return await client.send_message(
             user_id,
-            f"<b>{PAKET} Suntik Member GC/CH</b>\n<blockquote><b>{HARGA} Order manual, hubungi owner untuk harga & jumlah.</b></blockquote>",
-            reply_markup=kb([[BATAL]], [[Btn("💬 Hubungi Owner", url=f"tg://user?id={OWNER_ID}")]]))
-
+            f"<b>{PAKET} Suntik Member GC/CH</b>\n<blockquote><b>{HARGA} Order manual, silakan klik tombol di bawah untuk menghubungi admin.</b></blockquote>",
+            reply_markup=kb([[("💬 Hubungi Admin", "contact_admin_suntik", S, E_BELI)], [BATAL]]))
 
 # ------------------------------------------------------------------
 # CALLBACK USER: p2star <idx> | p2buy <kind> <key>
