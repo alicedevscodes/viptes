@@ -402,7 +402,7 @@ class ButtonUtils:
                     (" Ya saya ingin membeli", f"tambah {bulan} {harga} {plan}", ButtonStyle.PRIMARY, "5373052667671093676"),
                 ],
                 [(" Konfirmasi", f"confirm {harga} {plan}", ButtonStyle.SUCCESS, "6296367896398399651")],
-                [(" Batal", "buttonclose", ButtonStyle.DANGER, "5260293700088511294")],
+                [(" Batal", "go_payment", ButtonStyle.DANGER, "5260293700088511294")],
             ]
         )
         return button
