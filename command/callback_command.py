@@ -10,7 +10,11 @@ import requests
 import wget
 from pyrogram import enums, raw
 from pyrogram.errors import FloodWait, MessageNotModified
-from pyrogram.helpers import ikb
+from pyrogram.helpers import ikb, cell, divider, paragraph, send_rich, table
+from pyrogram.types import (
+    InlineKeyboardMarkup, InputRichMessage,
+    RichTextBold, RichTextCustomEmoji, RichTextTextMention, RichTextBold
+)
 from pyrogram.types import InlineKeyboardButton as Ikb
 from pyrogram.types import (InlineKeyboardMarkup, InputMediaAnimation,
                             InputMediaAudio, InputMediaDocument,
