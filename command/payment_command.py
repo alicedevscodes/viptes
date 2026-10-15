@@ -40,6 +40,29 @@ from database import dB
 from helpers import ButtonUtils, Emoji, Message, emo
 from logs import logger
 
+# style + custom emoji tombol/teks nokos (spasi di depan teks tombol = tempat emoji)
+P, S, D = ButtonStyle.PRIMARY, ButtonStyle.SUCCESS, ButtonStyle.DANGER
+E_NOKOS = "5357421984600833714"
+E_HARGA = "5461139036708033234"
+E_PAKET = "5231391525123934586"
+E_BELI = "6269136309093143551"
+E_BATAL = "5260293700088511294"
+
+
+def ce(emoji_id, fallback):
+    """Emoji premium di teks HTML. Kalau parser forkmu pakai <tg-emoji emoji-id="...">, ubah di sini."""
+    return f'<emoji id="{emoji_id}">{fallback}</emoji>'
+
+
+I_NOKOS, I_HARGA, I_PAKET = ce(E_NOKOS, "📱"), ce(E_HARGA, "💵"), ce(E_PAKET, "📦")
+
+
+def _kb(rows, url_rows=()):
+    """ikb (ButtonStyle + emoji); url_rows (InlineKeyboardButton url) ditaruh paling atas."""
+    markup = ikb(rows)
+    return InlineKeyboardMarkup(list(url_rows) + markup.inline_keyboard) if url_rows else markup
+
+
 transactions = {}
 waktu_jkt = timezone("Asia/Jakarta")
 
@@ -357,8 +380,8 @@ async def tambah_nokos_cmd(client, message):
     if added:
         await save_nokos_list(nokos_id, current)
 
-    text = f"<b>✅ {nokos_label(nokos_id)} berhasil disimpan.</b>"
-    text += f"<blockquote>📦 Stok sekarang: <code>{len(current)}</code></blockquote>"
+    text = f"<b>{I_NOKOS}{nokos_label(nokos_id)} berhasil disimpan.</b>"
+    text += f"<blockquote>{I_PAKET} Stok sekarang: <code>{len(current)}</code></blockquote>"
     if added:
         text += f"<b>➕ Ditambahkan:</b> <code>{', '.join(added)}</code>\n"
     if duplicate:
@@ -392,7 +415,9 @@ async def hapus_nokos_cmd(client, message):
                 data[nid].remove(number)
                 changed.add(nid)
             ids = ", ".join(nid.replace("nokos_", "") for nid in found)
-            lines.append(f"<blockquote><b>✅ Sukses menghapus <code>{number}</code> dari database {ids}</b></blockquote>")
+            lines.append(
+                f"<blockquote><b>{I_NOKOS} Sukses menghapus <code>{number}</code> dari database {ids}</b></blockquote>"
+            )
         for nid in changed:
             await save_nokos_list(nid, data[nid])
 
@@ -409,15 +434,15 @@ async def stok_nokos_cmd(client, message):
         numbers = await get_nokos_list(nokos_id)
         total += len(numbers)
         lines.append(
-            f"<b>{nokos_label(nokos_id)}</b>\n"
-            f"<b>📦 Stok:</b> <code>{len(numbers)}</code>\n"
-            f"<b>📱 Nomor:</b> <code>{', '.join(numbers) if numbers else 'Kosong'}</code>\n"
+            f"<b>{I_NOKOS}{nokos_label(nokos_id)}</b>\n"
+            f"<b>{I_PAKET} Stok:</b> <code>{len(numbers)}</code>\n"
+            f"<b>{I_NOKOS} Nomor:</b> <code>{', '.join(numbers) if numbers else 'Kosong'}</code>\n"
         )
 
     await message.reply(
-        "<b>📊 Stok Nokos</b>\n\n"
+        f"<b>{I_PAKET} Stok Nokos</b>\n\n"
         + "".join(lines)
-        + f"\n<b>Total semua stok:</b> <code>{total}</code>"
+        + f"\n<b>{I_PAKET} Total semua stok:</b> <code>{total}</code>"
     )
 
 
@@ -426,8 +451,8 @@ async def kirim_nomor_nokos(client, user_id, nokos_id, number):
         user_id,
         f"""<b>✅ Pembayaran Berhasil</b>
 
-<blockquote><b>Produk: {nokos_label(nokos_id)}
-📱 Nomor: <code>{number}</code></b></blockquote>
+<blockquote><b>{I_PAKET} Produk:{nokos_label(nokos_id)}
+{I_NOKOS} Nomor: <code>{number}</code></b></blockquote>
 
 <blockquote><b>Silahkan login dengan nomor yang sudah diberikan, Tunggu OTP akan segera dikirim memlalui bot ini.</b></blockquote>""",
     )
@@ -688,18 +713,14 @@ async def chose_plan(client, callback_query):
 
 # Pilih Id Nokos Nyee
 async def tampil_pilihan_nokos(client, user_id):
-    rows = []
-    for nokos_id in NOKOS_IDS:
-        stok = len(await get_available_nokos(nokos_id))
-        status = f"Stok {stok}" if stok else "Habis"
-        label = f"📱 {nokos_label(nokos_id)}"
-        rows.append([InlineKeyboardButton(label, callback_data=f"pilihnokos {nokos_id}")])
-    rows.append([InlineKeyboardButton("❌ Batal", callback_data="planusers back")])
+    rows = [[(nokos_label(nid), f"pilihnokos {nid}", P, E_NOKOS)] for nid in NOKOS_IDS]
+    rows.append([(" Batal", "planusers back", D, E_BATAL)])
 
     return await client.send_message(
         user_id,
-        f"<b>📱 Pilih ID Nokos</b>\n<blockquote><b>Untuk stok dan kebutuhan id nokos jika kosong tanyakan admin.</b></blockquote>",
-        reply_markup=InlineKeyboardMarkup(rows),
+        f"<b>{I_NOKOS} Pilih ID Nokos</b>\n"
+        f"<blockquote><b>{I_PAKET} Untuk stok dan kebutuhan id nokos jika kosong tanyakan admin.</b></blockquote>",
+        reply_markup=ikb(rows),
     )
 
 
@@ -716,22 +737,16 @@ async def pilih_nokos(client, callback_query):
     await callback_query.answer()
     price = get_nokos_price(nokos_id)
     await callback_query.edit_message_text(
-        f"""<b>📱 {nokos_label(nokos_id)}</b>
+        f"""<b>{I_NOKOS}{nokos_label(nokos_id)}</b>
 
-<blockquote><b>💵 Harga: <code>{(Message.format_rupiah(price))}</code>
-📦 Stok: <code>{stok}</code></b></blockquote>
+<blockquote><b>{I_HARGA} Harga: <code>{Message.format_rupiah(price)}</code>
+{I_PAKET} Stok: <code>{stok}</code></b></blockquote>
 
 <b>Lanjutkan pembelian?</b>""",
         reply_markup=ikb(
             [
-                [
-                  ((" Beli Sekarang"),
-                   f"buynokos {nokos_id}", ButtonStyle.PRIMARY, "5373052667671093676"),
-                ],
-                [
-                  ((" Kembali"),
-                   "planusers nokos", ButtonStyle.DANGER, "5373052667671093676"),
-                ],
+                [(" Beli Sekarang", f"buynokos {nokos_id}", S, E_BELI)],
+                [(" Kembali", "planusers nokos", D, E_BATAL)],
             ]
         ),
     )
@@ -755,9 +770,7 @@ async def beli_nokos(client, callback_query):
         return await client.send_message(
             user_id,
             "**__📑 You still have a pending transaction.__**",
-            reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("❌ Cancel", callback_data="batal_payment")]]
-            ),
+            reply_markup=ikb([[(" Cancel", "batal_payment", D, E_BATAL)]]),
         )
 
     amount = get_nokos_price(nokos_id)
@@ -800,12 +813,12 @@ async def beli_nokos(client, callback_query):
         now = datetime.now(waktu_jkt)
         expire_time = now + timedelta(minutes=expired_min)
 
-        buttons = []
-        if payment_url:
-            buttons.append(
-                [InlineKeyboardButton("📑 Buka Halaman Pembayaran", url=payment_url)]
-            )
-        buttons.append([InlineKeyboardButton("❌ Cancel", callback_data="batal_payment")])
+        url_rows = (
+            [[InlineKeyboardButton("📑 Buka Halaman Pembayaran", url=payment_url)]]
+            if payment_url
+            else []
+        )
+        qris_kb = _kb([[(" Cancel", "batal_payment", D, E_BATAL)]], url_rows)
 
         await loading.delete()
         sent_msg = await client.send_photo(
@@ -814,16 +827,16 @@ async def beli_nokos(client, callback_query):
             caption=f"""
 <b>💳 SCAN QRIS UNTUK MEMBELI</b>
 <blockquote><b>
-📦 Item: <code>{item_name}</code>
-💵 Harga: <code>{Message.format_rupiah(amount)}</code>
-💰 Total Bayar: <code>{Message.format_rupiah(total_price)}</code>
+{I_NOKOS} Item:<code>{item_name}</code>
+{I_HARGA} Harga: <code>{Message.format_rupiah(amount)}</code>
+{I_HARGA} Total Bayar: <code>{Message.format_rupiah(total_price)}</code>
 ⏰ Berlaku sampai: <code>{expire_time.strftime('%H:%M')}</code>
 
 ⚠️ Bayar sesuai Total Bayar (termasuk kode unik). Pembayaran terdeteksi otomatis.
 </b></blockquote>
 <blockquote>© Auto Payment By: @{client.me.username}</blockquote>
 """,
-            reply_markup=InlineKeyboardMarkup(buttons),
+            reply_markup=qris_kb,
         )
 
         transactions[user_id] = {
@@ -850,13 +863,13 @@ async def beli_nokos(client, callback_query):
                     caption=(
                         f"<b>🧾 Bukti pembayaran NOKOS</b>\n\n"
                         f"User: <code>{user_id}</code>\n"
-                        f"Item: {item_name}\n"
-                        f"Harga: {Message.format_rupiah(amount)}"
+                        f"{I_NOKOS} Item:{item_name}\n"
+                        f"{I_HARGA} Harga: {Message.format_rupiah(amount)}"
                     ),
                     reply_markup=ikb(
                         [
                             [
-                                (" Kasih Nokos", f"nokos {user_id} {client.me.username} {nokos_id}", ButtonStyle.PRIMARY),
+                                (" Kasih Nokos", f"nokos {user_id} {client.me.username} {nokos_id}", P, E_NOKOS),
                             ],
                         ]
                     ),
@@ -908,10 +921,10 @@ async def beli_nokos(client, callback_query):
 
 <blockquote><b><i>👤 User Name: <code>{callback_query.from_user.first_name}</code>
 🆔 User ID: <code>{str(user_id)[:3]}######</code>
-📦 Item: <code>{item_name}</code>
-📱 Nomor: <code>{number}</code>
-💵 Price: <code>{Message.format_rupiah(amount)}</code>
-💰 Paid: <code>{Message.format_rupiah(total_price)}</code>
+{I_PAKET} Item:<code>{item_name}</code>
+{I_NOKOS} Nomor: <code>{number}</code>
+{I_HARGA} Price: <code>{Message.format_rupiah(amount)}</code>
+{I_HARGA} Paid: <code>{Message.format_rupiah(total_price)}</code>
 🧾 Trx: <code>{tid}</code>
 📅 Date: <code>{now.strftime('%d-%m-%Y')}</code>
 ⏰ Time: <code>{datetime.now(waktu_jkt).strftime('%H:%M')}</code></i></b></blockquote>
