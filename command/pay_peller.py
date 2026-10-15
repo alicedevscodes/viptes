@@ -97,7 +97,7 @@ STARS = [
     (100000, 28999999), (150000, 42999999),
 ]
 
-NETFLIX_PRICE = 25000  # 1 bulan full garansi
+NETFLIX_PRICE = 2  # 1 bulan full garansi
 NF_VAR = "netflix_stock"  # 1 akun per baris, format email:password
 
 # ------------------------------------------------------------------
