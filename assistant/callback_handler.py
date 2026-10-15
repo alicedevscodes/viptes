@@ -73,8 +73,10 @@ async def _(client, callback):
         # Handler khusus untuk suntik
         if query == "contact_admin_suntik":
             await callback.answer()
+            return await contact_admins(client, callback)
+        elif query.startswith("jawab"):
             return await jawab_pesan(client, callback)
-        elif query.startswith("batal "):
+        elif query.startswith("batal"):
             return await batal_pesan(client, callback)
         elif query.startswith("profil"):
             return await profil_user(client, callback)
