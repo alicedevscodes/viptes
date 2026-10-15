@@ -29,7 +29,7 @@ from config import (API_BOTCHAX, API_MAELYN, BOT_NAME, COPY_ID, HELPABLE,
                     LOG_SELLER, SUDO_OWNERS, USENAME_OWNER)
 from database import dB, state
 from helpers import (ButtonUtils, Emoji, Message, TokenReferal, Tools,
-                      animate_proses, gens_font,
+                      animate_proses, gens_font, no_trigger,
                      paginate_modules, query_fonts)
 from logs import logger
 
