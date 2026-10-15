@@ -38,7 +38,7 @@ from .inline_command import (alive_inline, ask_cmd, bola_cmd, button_inline,
                              inline_ttsearch, pmpermit_inline, send_inline,
                              textpro_cmd, user_inline)
 from .payment_command import (cancel_payment, cancelpay_cmd, chose_plan,
-                              confirm_pay, kasih_vip, kasih_ubot, kurang_tambah, qris_cmd, user_aggre,
+                              confirm_pay, kasih_vip, kasih_ubot, kurang_tambah, qris_cmd, user_aggre, menu_blocks
                               kasih_nokos, beli_nokos, pilih_nokos, tambah_nokos_cmd, hapus_nokos_cmd, stok_nokos_cmd)
 from .pay_peller import nf_cmd, pay2_admin, pay2_callback, pay2_menu, pay2_back
 from .prem_command import (add_prem_user, add_pro_user, add_seller,
