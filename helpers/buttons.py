@@ -427,6 +427,14 @@ class ButtonUtils:
                      f"planusers nokos", ButtonStyle.PRIMARY, "5258397811329739167")
                     ),
                 ],
+                [
+                    (" Telegram Premium", "planusers telprem", ButtonStyle.PRIMARY, "5373052667671093676"),
+                    (" Stars", "planusers stars", ButtonStyle.PRIMARY, "5258397811329739167"),
+                ],
+                [
+                    (" Netflix", "planusers netflix", ButtonStyle.DANGER, "5458908492687497206"),
+                    (" Suntik GC/CH", "planusers suntik", ButtonStyle.SUCCESS, "6296367896398399651"),
+                ],
                 [(" Batal", "buttonclose", ButtonStyle.DANGER, "5260293700088511294")],
             ]
         )
