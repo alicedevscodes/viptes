@@ -392,7 +392,7 @@ async def hapus_nokos_cmd(client, message):
                 data[nid].remove(number)
                 changed.add(nid)
             ids = ", ".join(nid.replace("nokos_", "") for nid in found)
-            lines.append(f"✅ Sukses menghapus <code>{number}</code> dari database {ids}")
+            lines.append(f"<blockquote><b>✅ Sukses menghapus <code>{number}</code> dari database {ids}</b></blockquote>")
         for nid in changed:
             await save_nokos_list(nid, data[nid])
 
