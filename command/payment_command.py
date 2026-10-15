@@ -396,7 +396,7 @@ async def hapus_nokos_cmd(client, message):
         for nid in changed:
             await save_nokos_list(nid, data[nid])
 
-    await message.reply("<b>🗑️ Hapus Nokos</b>\n" + "\n".join(lines))
+    await message.reply("" + "\n".join(lines))
 
 async def stok_nokos_cmd(client, message):
     user_id = message.from_user.id
