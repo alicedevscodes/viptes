@@ -410,7 +410,7 @@ async def stok_nokos_cmd(client, message):
         total += len(numbers)
         lines.append(
             f"<b>{nokos_label(nokos_id)}</b>\n"
-            f"📦 Stok: <code>{len(numbers)}</code>"
+            f"📦 Stok: <code>{len(numbers)}</code>\n"
             f"📱 Nomor: <code>{', '.join(numbers) if numbers else 'Kosong'}</code>\n"
         )
 
