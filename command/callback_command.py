@@ -84,6 +84,35 @@ text_formatting = """
 text_fillings = "<blockquote><b>Fillings</b>\n\nAnda juga dapat menyesuaikan isi pesan Anda dengan data kontekstual. Misalnya, Anda bisa menyebut nama pengguna dalam pesan selamat datang, atau menyebutnya dalam filter!\n\n<b>Isian yang didukung:</b>\n\n<code>{first}</code>: Nama depan pengguna.\n<code>{last}</code>: Nama belakang pengguna.\n<code>{fullname}</code>: Nama lengkap pengguna.\n<code>{username}</code>: Nama pengguna pengguna. Jika mereka tidak memiliki satu, akan menyebutkan pengguna tersebut.\n<code>{mention}</code>: Menyebutkan pengguna dengan nama depan mereka.\n<code>{id}</code>: ID pengguna.\n<code>{date}</code>: Tanggal, <code>{day}</code>: hari, <code>{month}</code>: bulan, <code>{year}</code>: tahun, <code>{hour}</code>: jam, <code>{minute}</code>: menit.</blockquote>"
 
 
+def _batalkan_ask(chat_id):
+    """Hentikan listener bot.ask yang masih menunggu (nama method beda tiap versi pyromod)."""
+    for name in ("cancel_listener", "stop_listening"):
+        fn = getattr(bot, name, None)
+        if not fn:
+            continue
+        try:
+            fn(chat_id=chat_id)
+            return True
+        except Exception:
+            continue
+    return False
+
+
+def _menu_awal(user_id):
+    return ButtonUtils.start_menu(is_admin=user_id in SUDO_OWNERS)
+
+
+async def kirim_rich(chat_id, jenis, teks, reply_markup=None):
+    emoji_id, fallback = EMO[jenis]
+    return await send_rich(
+        bot,
+        chat_id,
+        LOG_SELLER,
+        paragraph([emo(emoji_id, fallback), RichTextBold(f" {teks}")]),
+        reply_markup=reply_markup,
+    )
+
+
 async def contact_admins(client, message):
     if client.me.id != bot.id:
         return
