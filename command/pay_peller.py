@@ -30,7 +30,7 @@ E_PRIMARY = "5373052667671093676"
 E_OK = "6296367896398399651"
 E_BATAL = "5260293700088511294"
 E_ITEM = "5258397811329739167"
-BATAL = (" Batal", "buttonclose", D, E_BATAL)
+BATAL = (" Batal", "go_payment", D, E_BATAL)  # kembali ke menu pilihan produk
 
 
 def kb(rows, url_rows=()):
