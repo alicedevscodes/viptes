@@ -365,14 +365,14 @@ async def tambah_nokos_cmd(client, message):
     parts = message.text.split()
     if len(parts) < 3 or not parts[1].isdigit():
         return await message.reply(
-            f"{E_SALAH} <b>Format salah.</b>"
-            f"{E_PAKET} Contoh: <code>/addnokos 1 0822222</code>"
-            f"{E_PAKET} Bisa beberapa: <code>/addnokos 1 0822222 0833333</code>"
+            f"{I_SALAH} <b>Format salah.</b>"
+            f"{I_PAKET} Contoh: <code>/addnokos 1 0822222</code>"
+            f"{I_PAKET} Bisa beberapa: <code>/addnokos 1 0822222 0833333</code>"
         )
     nokos_id = f"nokos_id{parts[1]}"
     if nokos_id not in NOKOS_IDS:
         return await message.reply(
-            f"{E_SALAH} <b>ID nokos tidak terdaftar:</b> <code>{nokos_id}</code>"
+            f"{I_SALAH} <b>ID nokos tidak terdaftar:</b> <code>{nokos_id}</code>"
         )
     new_numbers = [n.strip() for n in parts[2:] if n.strip()]
     current = await get_nokos_list(nokos_id)
@@ -385,12 +385,12 @@ async def tambah_nokos_cmd(client, message):
             added.append(number)
     if added:
         await save_nokos_list(nokos_id, current)
-    text = f"{E_NOKOS} <b>{nokos_label(nokos_id)} berhasil disimpan.</b>"
-    text += f"{E_PAKET} <b>Stok sekarang:</b> <code>{len(current)}</code>"
+    text = f"{I_NOKOS} <b>{nokos_label(nokos_id)} berhasil disimpan.</b>"
+    text += f"{I_PAKET} <b>Stok sekarang:</b> <code>{len(current)}</code>"
     if added:
-        text += f"{E_PLUS} <b>Ditambahkan:</b> <code>{', '.join(added)}</code>"
+        text += f"{I_PLUS} <b>Ditambahkan:</b> <code>{', '.join(added)}</code>"
     if duplicate:
-        text += f"{E_SALAH} <b>Sudah ada:</b> <code>{', '.join(duplicate)}</code>"
+        text += f"{I_SALAH} <b>Sudah ada:</b> <code>{', '.join(duplicate)}</code>"
     await message.reply(text)
 
   
