@@ -19,7 +19,7 @@ from .payment_command import (
 )
 from config import LOG_SELLER, OWNER_ID
 from database import dB
-from helpers import Message
+from helpers import ButtonUtils, Message
 from logs import logger
 
 rp = Message.format_rupiah
@@ -30,7 +30,17 @@ E_PRIMARY = "5373052667671093676"
 E_OK = "6296367896398399651"
 E_BATAL = "5260293700088511294"
 E_ITEM = "5258397811329739167"
-BATAL = (" Batal", "go_payment", D, E_BATAL)  # kembali ke menu pilihan produk
+BATAL = (" Batal", "menu_back", D, E_BATAL)  # kembali ke menu pilihan produk (edit pesan)
+MENU_TEXT = (
+    "<b>💎 Seblak Ultra Pedasss</b>\n"
+    "<blockquote><b>Pilih produk yang kamu butuhkan.</b></blockquote>"
+)
+
+
+async def pay2_back(client, cq):
+    """Tombol Batal: edit pesan ini jadi menu pilihan produk (tanpa hapus/kirim baru)."""
+    await cq.answer()
+    await cq.edit_message_text(MENU_TEXT, reply_markup=ButtonUtils.chose_plan())
 
 
 def kb(rows, url_rows=()):
