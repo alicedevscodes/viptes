@@ -1,3 +1,11 @@
+######################################################
+# UPDATES PAYMENT GATEWAY CASAKU.ID
+
+# ©CREDITS: @ALICEDEVSCODES as DEVA | @MELIN -> TEMEN GUA 
+# DIKATA COPAS LU BABi ANJING ASYU
+# NGAKU NGAKU BOOL NYA PANAS 7 TURUNAN 
+
+######################################################
 
 import asyncio
 import traceback
