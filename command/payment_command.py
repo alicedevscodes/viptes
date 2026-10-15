@@ -374,8 +374,8 @@ async def hapus_nokos_cmd(client, message):
     targets = [n.strip() for n in message.text.split()[1:] if n.strip()]
     if not targets:
         return await message.reply(
-            "<b>Format salah.</b>\nContoh: <code>/del 0811111</code>\n"
-            "Bisa beberapa: <code>/del 0811111 0811112</code>"
+            "<b>Format salah.</b>\n<b>Contoh:</b> <code>/del 0843211234</code>\n"
+            "<b>Bisa beberapa:</b> <code>/del 08012321092 09876543210</code>"
         )
     lines, changed = [], set()
     async with nokos_lock:
@@ -429,7 +429,7 @@ async def kirim_nomor_nokos(client, user_id, nokos_id, number):
 <blockquote><b>Produk: {nokos_label(nokos_id)}
 📱 Nomor: <code>{number}</code></b></blockquote>
 
-<blockquote><b>Simpan nomor di atas. Jika butuh bantuan, hubungi admin.</b></blockquote>""",
+<blockquote><b>Silahkan login dengan nomor yang sudah diberikan, Tunggu OTP akan segera dikirim memlalui bot ini.</b></blockquote>""",
     )
 
 
@@ -698,7 +698,7 @@ async def tampil_pilihan_nokos(client, user_id):
 
     return await client.send_message(
         user_id,
-        f"<b>📱 Pilih ID Nokos</b>\n<blockquote><b>Harga nokos:\n{label} {Message.format_rupiah(get_nokos_price(nokos_id))}.</b></blockquote>",
+        f"<b>📱 Pilih ID Nokos</b>\n<blockquote><b>Untuk stok dan kebutuhan id nokos jika kosong tanyakan admin.</b></blockquote>",
         reply_markup=InlineKeyboardMarkup(rows),
     )
 
@@ -729,7 +729,7 @@ async def pilih_nokos(client, callback_query):
                    f"buynokos {nokos_id}", ButtonStyle.PRIMARY, "5373052667671093676"),
                 ],
                 [
-                  (("⬅️ Kembali"),
+                  ((" Kembali"),
                    "planusers nokos", ButtonStyle.DANGER, "5373052667671093676"),
                 ],
             ]
