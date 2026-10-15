@@ -371,39 +371,32 @@ async def hapus_nokos_cmd(client, message):
     if user_id != OWNER_ID:
         return await message.reply("<b>❌ Perintah ini hanya untuk Owner.</b>")
 
-    parts = message.text.split()
-    if len(parts) < 2:
+    targets = [n.strip() for n in message.text.split()[1:] if n.strip()]
+    if not targets:
         return await message.reply(
-            "<b>Format salah.</b>Contoh: <code>/del1 0811111</code>"
-            "Bisa hapus beberapa: <code>/del1 0811111 0811112</code>"
+            "<b>Format salah.</b>\nContoh: <code>/del 0811111</code>\n"
+            "Bisa beberapa: <code>/del 0811111 0811112</code>"
         )
-    nokos_id = "nokos_id" + parts[0].replace("/del", "")
-    if nokos_id not in NOKOS_IDS:
-        return await message.reply(
-            f"<b>❌ ID nokos tidak terdaftar:</b> <code>{nokos_id}</code>"
-        )
-    delete_numbers = [n.strip() for n in parts[1:] if n.strip()]
-    current = await get_nokos_list(nokos_id)
-    deleted, not_found = [], []
-    for number in delete_numbers:
-        if number in current:
-            current.remove(number)
-            deleted.append(number)
-        else:
-            not_found.append(number)
+    lines, changed = [], set()
+    async with nokos_lock:
+        data = {nid: await get_nokos_list(nid) for nid in NOKOS_IDS}
+        for number in targets:
+            if number in reserved_nokos:
+                lines.append(f"⏳ <code>{number}</code> sedang dibayar pembeli, coba lagi nanti.")
+                continue
+            found = [nid for nid, nums in data.items() if number in nums]
+            if not found:
+                lines.append(f"⚠️ <code>{number}</code> tidak ditemukan di database manapun.")
+                continue
+            for nid in found:
+                data[nid].remove(number)
+                changed.add(nid)
+            ids = ", ".join(nid.replace("nokos_", "") for nid in found)
+            lines.append(f"✅ Sukses menghapus <code>{number}</code> dari database {ids}")
+        for nid in changed:
+            await save_nokos_list(nid, data[nid])
 
-    if deleted:
-        await save_nokos_list(nokos_id, current)
-
-    text = f"<b>🗑️ {nokos_label(nokos_id)} diperbarui.</b>"
-    text += f"<blockquote>📦 Stok sekarang: <code>{len(current)}</code></blockquote>"
-    if deleted:
-        text += f"<b>✅ Dihapus:</b> <code>{', '.join(deleted)}</code>"
-    if not_found:
-        text += f"<b>⚠️ Tidak ditemukan:</b> <code>{', '.join(not_found)}</code>"
-
-    await message.reply(text)
-
+    await message.reply("<b>🗑️ Hapus Nokos</b>\n" + "\n".join(lines))
 
 async def stok_nokos_cmd(client, message):
     user_id = message.from_user.id
