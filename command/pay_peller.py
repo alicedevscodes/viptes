@@ -30,7 +30,7 @@ E_PRIMARY = "5373052667671093676"
 E_OK = "6296367896398399651"
 E_BATAL = "5260293700088511294"
 E_ITEM = "5258397811329739167"
-BATAL = (" Batal", "menu_back", D, E_BATAL)  # kembali ke menu pilihan produk (edit pesan)
+BATAL = (" Batal", "planusers back", D, E_BATAL)  # kembali ke menu pilihan produk (edit pesan)
 MENU_TEXT = (
     "<b>💎 Seblak Ultra Pedasss</b>\n"
     "<blockquote><b>Pilih produk yang kamu butuhkan.</b></blockquote>"
@@ -39,8 +39,20 @@ MENU_TEXT = (
 
 async def pay2_back(client, cq):
     """Tombol Batal: edit pesan ini jadi menu pilihan produk (tanpa hapus/kirim baru)."""
+    logger.info(f"pay2_back dipanggil oleh {cq.from_user.id}")
     await cq.answer()
-    await cq.edit_message_text(MENU_TEXT, reply_markup=ButtonUtils.chose_plan())
+    try:
+        await cq.edit_message_text(MENU_TEXT, reply_markup=ButtonUtils.chose_plan())
+    except Exception:
+        logger.error(f"ERROR pay2_back: {traceback.format_exc()}")
+        # fallback: pesan tidak bisa diedit -> kirim menu baru
+        try:
+            await cq.message.delete()
+        except Exception:
+            pass
+        await client.send_message(
+            cq.from_user.id, MENU_TEXT, reply_markup=ButtonUtils.chose_plan()
+        )
 
 
 def kb(rows, url_rows=()):
