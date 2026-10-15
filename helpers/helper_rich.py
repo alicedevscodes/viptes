@@ -1,4 +1,5 @@
-"""
+###################################################
+""""
 CREDITS : @aliceajako @synystercodes 
 
 DILARANG KERAS HAPUS CREDIT ATAU MENGGANTINYA!!
@@ -13,6 +14,8 @@ Semua fungsi di bawah sudah tersedia otomatis lewat:
         buttons_grid, send_rich, RichMessageBuilder, Button,
     )
 """
+###################################################
+
 # =====================================================================
 # 1. TEKS & JUDUL
 
@@ -48,7 +51,6 @@ block_quote(
     paragraph("Ini paragraf kedua di kutipan yang sama."),
     credit="Sumber Berita",
 )
-
 
 # =====================================================================
 # 3. KODE
