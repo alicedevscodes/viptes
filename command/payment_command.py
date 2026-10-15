@@ -58,23 +58,13 @@ VIP_CHANNELS = {
     "pro": VIP_CHANNEL_PRO,
 }
 
-# ------------------------------------------------------------------
-# [BARU] JENIS PRODUK PER PLAN
-# "vip"  -> hanya kirim link channel (TANPA tombol Mulai Buat Userbot)
-# "ubot" -> perilaku lama (tombol Mulai Buat Userbot tetap muncul)
-# Plan yang tidak terdaftar dianggap "vip".
-# Kalau ada plan khusus userbot, daftarkan di sini, contoh: "ubot": "ubot"
-# ------------------------------------------------------------------
+
 PRODUCT_BY_PLAN = {
     "basic": "vip",
     "pro": "vip",
     "is_pro": "vip",
 }
 
-
-nokos_id1 = "0811111, 0811112"
-nokos_id2 = "082222, 0822221"
-nokos_id5 = "085555, 0855553"
 
 NOKOS_OWNER = OWNER_ID                     # pemilik vars stok nokos
 NOKOS_IDS = ["nokos_id1", "nokos_id2", "nokos_id5"]  # id yang dijual
@@ -258,11 +248,6 @@ async def _delete_qr_message(client, chat_id, message_id):
         pass
 
 
-# ------------------------------------------------------------------
-# [BARU] HELPER STOK NOKOS (vars)
-# CATATAN: sesuaikan dB.get_var / dB.set_var di 2 fungsi paling atas
-# kalau signature di database kamu berbeda.
-# ------------------------------------------------------------------
 def nokos_label(nokos_id):
     return "Nokos " + str(nokos_id).replace("nokos_id", "ID ")
 
@@ -334,13 +319,7 @@ async def restock_nokos(nokos_id, number):
             numbers.append(number)
             await save_nokos_list(nokos_id, numbers)
 
-# ------------------------------------------------------------------
-# [BARU] PERINTAH TAMBAH STOK & CEK STOK NOKOS
-# /nokos1 0811111 0811112
-# /nokos2 082222 0822221
-# /nokos5 085555 0855553
-# /stok
-# ------------------------------------------------------------------
+# Tambah Stok Nokos
 async def tambah_nokos_cmd(client, message):
     user_id = message.from_user.id
     if user_id != OWNER_ID:
@@ -653,12 +632,7 @@ async def chose_plan(client, callback_query):
     )
 
 
-# ------------------------------------------------------------------
-# [BARU] PILIH ID NOKOS (buyer)
-# callback_data:
-#   "pilihnokos <nokos_idX>"  -> pilih_nokos
-#   "buynokos <nokos_idX>"    -> beli_nokos
-# ------------------------------------------------------------------
+# Pilih Id Nokos Nyee
 async def tampil_pilihan_nokos(client, user_id):
     rows = []
     for nokos_id in NOKOS_IDS:
