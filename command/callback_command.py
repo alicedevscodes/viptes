@@ -26,7 +26,7 @@ from pytz import timezone
 from html import escape
 from clients import bot, navy
 from config import (API_BOTCHAX, OWNER_ID, API_MAELYN, BOT_NAME, COPY_ID, HELPABLE,
-                    LOG_SELLER, LOG_SUPPORT, SUDO_OWNERS, USENAME_OWNER)
+                    LOG_SELLER, SUDO_OWNERS, USENAME_OWNER)
 from database import dB, state
 from helpers import (ButtonUtils, build_help_rich, build_help_list_rich, emo, InlineRichProxy, Emoji, Message, Spotify, TokenReferal, Tools,
                      YoutubeSearch, animate_proses, get_time, gens_font,
