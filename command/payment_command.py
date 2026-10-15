@@ -1150,10 +1150,10 @@ async def confirm_pay(client: Message, callback_query):
 
 async def cancel_payment(client, callback_query):
     user_id = callback_query.from_user.id
-    await callback_query.answer()
 
     tx = transactions.pop(user_id, None)
     if not tx:
+        await callback_query.answer()
         return await callback_query.message.reply(
             "**__❌ Tidak Ada Transaksi Yang Aktif__**"
         )
@@ -1165,10 +1165,11 @@ async def cancel_payment(client, callback_query):
         logger.warning(f"Cancel Casaku gagal: {e}")
     await _delete_qr_message(client, tx["chat_id"], tx["message_id"])
 
-    await callback_query.message.reply(
-        "**__📑 Transaksi Berhasil Dibatalkan.__**",
-        reply_markup=ButtonUtils.start_menu(user_id),
+    await client.send_message(
+        user_id, "**__📑 Transaksi Berhasil Dibatalkan.__**"
     )
+    # kembali ke menu pilihan produk
+    return await user_aggre(client, callback_query)
 
 
 async def kasih_vip(client, callback_query):
