@@ -415,7 +415,7 @@ async def stok_nokos_cmd(client, message):
         )
 
     await message.reply(
-        "<b>📊 Stok Nokos</b>\n"
+        "<b>📊 Stok Nokos</b>\n\n"
         + "".join(lines)
         + f"\n<b>Total semua stok:</b> <code>{total}</code>"
     )
