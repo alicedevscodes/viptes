@@ -640,7 +640,7 @@ async def tampil_pilihan_nokos(client, user_id):
         status = f"Stok {stok}" if stok else "Habis"
         label = f"📱 {nokos_label(nokos_id)} • {Message.format_rupiah(get_nokos_price(nokos_id))} • {status}"
         rows.append([InlineKeyboardButton(label, callback_data=f"pilihnokos {nokos_id}")])
-    rows.append([InlineKeyboardButton("❌ Batal", callback_data="buttonclose")])
+    rows.append([InlineKeyboardButton("❌ Batal", callback_data="planusers back")])
 
     return await client.send_message(
         user_id,
