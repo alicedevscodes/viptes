@@ -691,7 +691,17 @@ class Bot(BaseClient):
 
         await self.set_bot_commands(
             [
-                types.BotCommand("start", "Start bot."),              
+                types.BotCommand("start", "Start bot."),
+                types.BotCommand("stok", "Cek stok semua nokos"),
+                types.BotCommand("nokos1", "Tambah stok Nokos ID 1"),
+                types.BotCommand("nokos2", "Tambah stok Nokos ID 2"),
+                types.BotCommand("nokos5", "Tambah stok Nokos ID 5"),
+                types.BotCommand("del1", "Hapus stok Nokos ID 1"),
+                types.BotCommand("del2", "Hapus stok Nokos ID 2"),
+                types.BotCommand("del5", "Hapus stok Nokos ID 5"),
+                types.BotCommand("stoknf", "Cek stok akun Netflix"),
+                types.BotCommand("addnf", "Tambah akun Netflix (email:pass)"),
+                types.BotCommand("delnf", "Hapus akun Netflix (email:pass)"),
             ]
         )
         for modul in PLUGINS:
