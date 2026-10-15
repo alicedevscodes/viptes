@@ -30,6 +30,25 @@ E_PRIMARY = "5373052667671093676"
 E_OK = "6296367896398399651"
 E_BATAL = "5260293700088511294"
 E_ITEM = "5258397811329739167"
+E_STARS = "6255759783773605832"
+E_HARGA = "5461139036708033234"
+E_PREM = "6298747815086524010"
+E_PAKET = "5231391525123934586"
+E_NETFLIX = "5318911503938634641"
+E_BELI = "6269136309093143551"
+E_PLUS = "5226945370684140473"
+E_MINUS = "5229113891081956317"
+
+
+def ce(emoji_id, fallback):
+    """Emoji premium (custom) di dalam teks HTML.
+    Kalau parser forkmu memakai <tg-emoji emoji-id="...">, cukup ubah di sini."""
+    return f'<emoji id="{emoji_id}">{fallback}</emoji>'
+
+
+PREM, STAR, NFX = ce(E_PREM, "💎"), ce(E_STARS, "⭐"), ce(E_NETFLIX, "🎬")
+HARGA, PAKET = ce(E_HARGA, "💵"), ce(E_PAKET, "📦")
+ICON = {"tp": PREM, "st": STAR, "nf": NFX}  # emoji per jenis item
 BATAL = (" Batal", "planusers back", D, E_BATAL)  # kembali ke menu pilihan produk (edit pesan)
 async def pay2_back(client, cq):
     """Tombol Batal: kembali ke menu pilihan produk yang SAMA dengan user_aggre (rich).
@@ -167,7 +186,7 @@ async def kirim_netflix(client, user_id, acc):
         user_id,
         f"""<b>✅ Pembayaran Berhasil</b>
 
-<blockquote><b>Produk: Netflix 1 Bulan Full Garansi
+<blockquote><b>{NFX} Produk: Netflix 1 Bulan Full Garansi
 🔑 Akun: <code>{acc}</code></b></blockquote>
 
 <blockquote><b>Jangan ubah email/password. Jika ada kendala, hubungi admin.</b></blockquote>""",
@@ -193,15 +212,15 @@ def item_info(kind, key):
 def stars_view(i):
     stars, price = STARS[i]
     text = (
-        "<b>⭐ Beli Telegram Stars</b>\n"
-        f"<blockquote><b>Paket: <code>{stars:,}</code> Stars\n"
-        f"💵 Harga: <code>{rp(price)}</code></b></blockquote>\n"
-        "<i>Tekan ➖ / ➕ untuk ubah jumlah.</i>"
+        f"<b>{STAR} Beli Telegram Stars</b>\n"
+        f"<blockquote><b>{PAKET} Paket: <code>{stars:,}</code> Stars\n"
+        f"{HARGA} Harga: <code>{rp(price)}</code></b></blockquote>\n"
+        "<i>Tekan Kurang / Tambah untuk ubah jumlah.</i>"
     )
     markup = ikb([
-        [(" Kurang", f"p2star {max(i - 1, 0)}", P, E_PRIMARY),
-         (" Tambah", f"p2star {min(i + 1, len(STARS) - 1)}", P, E_PRIMARY)],
-        [(f" Beli • {rp(price)}", f"p2buy st {i}", S, E_OK)],
+        [(" Kurang", f"p2star {max(i - 1, 0)}", P, E_MINUS),
+         (" Tambah", f"p2star {min(i + 1, len(STARS) - 1)}", P, E_PLUS)],
+        [(f" Beli • {rp(price)}", f"p2buy st {i}", S, E_BELI)],
         [BATAL],
     ])
     return text, markup
@@ -209,10 +228,10 @@ def stars_view(i):
 
 async def pay2_menu(client, user_id, plan):
     if plan == "telprem":
-        rows = [[(f" {label} • {rp(price)}", f"p2buy tp {key}", P, E_ITEM)]
+        rows = [[(f" {label} • {rp(price)}", f"p2buy tp {key}", P, E_PREM)]
                 for key, (label, price) in TELPREM.items()]
         return await client.send_message(
-            user_id, "<b>💎 Telegram Premium</b>\n<blockquote><b>Pilih paket:</b></blockquote>",
+            user_id, f"<b>{PREM} Telegram Premium</b>\n<blockquote><b>{PAKET} Pilih paket:</b></blockquote>",
             reply_markup=kb(rows + [[BATAL]]))
 
     if plan == "stars":
@@ -221,17 +240,17 @@ async def pay2_menu(client, user_id, plan):
 
     if plan == "netflix":
         stok = len(await nf_available())
-        rows = [[(f" Beli • {rp(NETFLIX_PRICE)}", "p2buy nf 0", S, E_OK)]] if stok else []
+        rows = [[(f" Beli • {rp(NETFLIX_PRICE)}", "p2buy nf 0", S, E_BELI)]] if stok else []
         return await client.send_message(
             user_id,
-            f"<b>🎬 Netflix 1 Bulan Full Garansi</b>\n<blockquote><b>💵 Harga: <code>{rp(NETFLIX_PRICE)}</code>\n"
-            f"📦 Stok: <code>{stok or 'Habis'}</code></b></blockquote>",
+            f"<b>{NFX} Netflix 1 Bulan Full Garansi</b>\n<blockquote><b>{HARGA} Harga: <code>{rp(NETFLIX_PRICE)}</code>\n"
+            f"{PAKET} Stok: <code>{stok or 'Habis'}</code></b></blockquote>",
             reply_markup=kb(rows + [[BATAL]]))
 
     if plan == "suntik":
         return await client.send_message(
             user_id,
-            "<b>🚀 Suntik Member GC/CH</b>\n<blockquote><b>Order manual, hubungi owner untuk harga & jumlah.</b></blockquote>",
+            f"<b>{PAKET} Suntik Member GC/CH</b>\n<blockquote><b>{HARGA} Order manual, hubungi owner untuk harga & jumlah.</b></blockquote>",
             reply_markup=kb([[BATAL]], [[Btn("💬 Hubungi Owner", url=f"tg://user?id={OWNER_ID}")]]))
 
 
@@ -275,10 +294,10 @@ async def checkout(client, cq, kind, key):
 
     # tombol akses manual admin (di bukti & log pembayaran)
     if kind == "nf":
-        admin_kb = ikb([[(" Kasih Netflix", f"p2nf {user_id}", P, E_PRIMARY)]])
+        admin_kb = ikb([[(" Kasih Netflix", f"p2nf {user_id}", P, E_NETFLIX)]])
     else:
-        lbl = " Proses Telprem" if kind == "tp" else " Kirim Stars"
-        admin_kb = ikb([[(lbl, f"p2done {user_id} {kind} {key}", P, E_PRIMARY)]])
+        lbl, emo_id = (" Proses Telprem", E_PREM) if kind == "tp" else (" Kirim Stars", E_STARS)
+        admin_kb = ikb([[(lbl, f"p2done {user_id} {kind} {key}", P, emo_id)]])
 
     loading = await client.send_message(user_id, "<b><i>Memproses Pembayaran QRIS...</i></b>")
     qris_path = tid = bukti_task = None
@@ -309,9 +328,9 @@ async def checkout(client, cq, kind, key):
             caption=f"""
 <b>💳 SCAN QRIS UNTUK MEMBELI</b>
 <blockquote><b>
-📦 Item: <code>{name}</code>
-💵 Harga: <code>{rp(amount)}</code>
-💰 Total Bayar: <code>{rp(total)}</code>
+{ICON[kind]} Item: <code>{name}</code>
+{HARGA} Harga: <code>{rp(amount)}</code>
+{HARGA} Total Bayar: <code>{rp(total)}</code>
 ⏰ Berlaku sampai: <code>{(now + timedelta(minutes=exp_min)).strftime('%H:%M')}</code>
 
 ⚠️ Bayar sesuai Total Bayar (termasuk kode unik). Pembayaran terdeteksi otomatis.
@@ -336,7 +355,7 @@ async def checkout(client, cq, kind, key):
                 copied = await bukti.copy(
                     LOG_SELLER,
                     caption=f"<b>🧾 Bukti pembayaran</b>\n\nUser: <code>{user_id}</code>\n"
-                            f"Item: {name}\nHarga: {rp(amount)}",
+                            f"{ICON[kind]} Item: {name}\n{HARGA} Harga: {rp(amount)}",
                     reply_markup=admin_kb)
                 await dB.set_var(copied.id, f"FORWARD_{copied.id}", user_id)
                 await client.send_message(user_id, "<b>✅ Bukti pembayaran terkirim, tunggu admin memproses.</b>")
@@ -379,9 +398,9 @@ async def checkout(client, cq, kind, key):
 
 <blockquote><b><i>👤 User Name: <code>{cq.from_user.first_name}</code>
 🆔 User ID: <code>{str(user_id)[:3]}######</code>
-📦 Item: <code>{name}</code>{f"{chr(10)}🔑 Akun: <code>{acc}</code>" if acc else ""}
-💵 Price: <code>{rp(amount)}</code>
-💰 Paid: <code>{rp(total)}</code>
+{ICON[kind]} Item: <code>{name}</code>{f"{chr(10)}🔑 Akun: <code>{acc}</code>" if acc else ""}
+{HARGA} Price: <code>{rp(amount)}</code>
+{HARGA} Paid: <code>{rp(total)}</code>
 🧾 Trx: <code>{tid}</code>
 📅 {now.strftime('%d-%m-%Y')} ⏰ {datetime.now(waktu_jkt).strftime('%H:%M')}</i></b></blockquote>
 
@@ -400,7 +419,7 @@ async def checkout(client, cq, kind, key):
         else:  # telprem / stars -> admin proses manual
             await client.send_message(
                 user_id,
-                f"<b>✅ Pembayaran Berhasil</b>\n<blockquote><b>Item: {name}\n"
+                f"<b>✅ Pembayaran Berhasil</b>\n<blockquote><b>{ICON[kind]} Item: {name}\n"
                 "Admin akan segera memproses. Kirim username/data tujuan ke admin.</b></blockquote>",
                 reply_markup=Markup([[Btn("💬 Hubungi Admin", url=f"tg://user?id={OWNER_ID}")]]),
             )
