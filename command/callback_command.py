@@ -168,7 +168,7 @@ async def contact_admins(client, message):
                 ],
             ]
         )
-        await pesan.copy(LOG_SUPPORT, reply_markup=buttons)
+        await pesan.copy(LOG_SELLER, reply_markup=buttons)
         return await kirim_rich(user_id, "sukses", f"Pesan anda terkirim: {full_name}")
     except asyncio.TimeoutError:
         return await kirim_rich(user_id, "info", "Sesi berakhir, silakan coba lagi.")
