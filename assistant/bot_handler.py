@@ -19,13 +19,7 @@ from logs import logger
 @CMD.BOT(
     [
         "restart",
-        "nokos1",
-        "nokos2",
-        "nokos5",
-        "nokos6",
-        "nokos7",
-        "nokos8",
-        "nokos9",
+        "addnokos",
         "del",
         "stok",
         "addnf",
@@ -104,7 +98,7 @@ async def _(client, message):
             return await backup(client, message)
         elif command[0] == "stok":
             return await stok_nokos_cmd(client, message)
-        elif command[0] in ["nokos1", "nokos2", "nokos5", "nokos6", "nokos7", "nokos8", "nokos9"]:
+        elif command[0] in ["addnokos"]:
             return await tambah_nokos_cmd(client, message)
         elif command[0] == "del":
             return await hapus_nokos_cmd(client, message)
