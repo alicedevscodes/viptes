@@ -1,7 +1,3 @@
-######################################################
-# PAY2 - Telegram Premium, Stars, Netflix, Suntik GC/CH
-# Pakai payment Casaku dari payment_command.py (tanpa copy ulang)
-######################################################
 
 import asyncio
 import traceback
@@ -25,7 +21,7 @@ from logs import logger
 
 rp = Message.format_rupiah
 
-# style + custom emoji tombol (spasi di depan teks = tempat emoji)
+# Class Emoji Premium
 P, S, D = ButtonStyle.PRIMARY, ButtonStyle.SUCCESS, ButtonStyle.DANGER
 E_PRIMARY = "5373052667671093676"
 E_OK = "6296367896398399651"
@@ -42,8 +38,6 @@ E_MINUS = "5229113891081956317"
 
 
 def ce(emoji_id, fallback):
-    """Emoji premium (custom) di dalam teks HTML.
-    Kalau parser forkmu memakai <tg-emoji emoji-id="...">, cukup ubah di sini."""
     return f'<emoji id="{emoji_id}">{fallback}</emoji>'
 
 
@@ -52,13 +46,10 @@ HARGA, PAKET = ce(E_HARGA, "💵"), ce(E_PAKET, "📦")
 ICON = {"tp": PREM, "st": STAR, "nf": NFX}  # emoji per jenis item
 BATAL = (" Batal", "planusers back", D, E_BATAL)  # kembali ke menu pilihan produk (edit pesan)
 async def pay2_back(client, cq):
-    """Tombol Batal: kembali ke menu pilihan produk yang SAMA dengan user_aggre (rich).
-    Coba edit pesan dulu; kalau fork tidak punya fungsi edit rich, fallback hapus + kirim ulang."""
     logger.info(f"pay2_back dipanggil oleh {cq.from_user.id}")
     await cq.answer()
     markup = ButtonUtils.chose_plan()
     try:
-        # Bot API 10.1: rich message diedit lewat editMessageText(rich_message=...)
         from pyrogram.types import InputRichMessage
 
         return await cq.edit_message_text(
@@ -79,10 +70,8 @@ def kb(rows, url_rows=()):
     markup = ikb(rows)
     return Markup(list(url_rows) + markup.inline_keyboard) if url_rows else markup
 
-# ------------------------------------------------------------------
-# DAFTAR PRODUK  (ubah harga di sini)
-# ------------------------------------------------------------------
-TELPREM = {  # key: (label, harga)
+
+TELPREM = {  # Harga teleprem
     "gift3": ("Gift 3 Bulan", 165000),
     "gift6": ("Gift 6 Bulan", 230000),
     "gift12": ("Gift 12 Bulan", 390000),
@@ -90,7 +79,7 @@ TELPREM = {  # key: (label, harga)
     "login12": ("Login 12 Bulan", 300000),
 }
 
-# (jumlah stars, harga) sesuai screenshot paket Telegram
+# Harga stars
 STARS = [
     (100, 31499), (150, 45999), (250, 74999), (350, 103999), (500, 146999),
     (750, 219999), (1000, 289999), (1500, 433999), (2500, 719999),
@@ -99,10 +88,8 @@ STARS = [
 ]
 
 NETFLIX_PRICE = 2  # 1 bulan full garansi
-NF_VAR = "netflix_stock"  # 1 akun per baris, format email:password
+NF_VAR = "netflix_stock"  # 1 akun perbaris
 
-# ------------------------------------------------------------------
-# STOK NETFLIX (sistem sama seperti nokos: booking saat bayar, hapus saat terjual)
 # ------------------------------------------------------------------
 nf_lock = asyncio.Lock()
 nf_reserved = {}  # akun -> user_id
@@ -194,12 +181,7 @@ async def kirim_netflix(client, user_id, acc):
     )
 
 
-# ------------------------------------------------------------------
-# MENU PRODUK
-# dipanggil dari chose_plan() di payment_command.py:
-#   if plan in ("telprem", "stars", "netflix", "suntik"):
-#       return await pay2_menu(client, user_id, plan)
-# ------------------------------------------------------------------
+# -------------------------- PRODUK -------------------------------
 def item_info(kind, key):
     if kind == "tp":
         label, price = TELPREM[key]
@@ -255,9 +237,7 @@ async def pay2_menu(client, user_id, plan):
             f"<b>{PAKET} Suntik Member GC/CH</b>\n<blockquote><b>{HARGA} Order manual, silakan klik tombol di bawah untuk menghubungi admin.</b></blockquote>",
             reply_markup=kb([[("💬 Hubungi Admin", "contact_admin_suntik", S, E_BELI)], [BATAL]]))
 
-# ------------------------------------------------------------------
-# CALLBACK USER: p2star <idx> | p2buy <kind> <key>
-# ------------------------------------------------------------------
+
 async def pay2_callback(client, cq):
     d = cq.data.split()
     if d[0] == "p2star":
@@ -272,9 +252,6 @@ async def pay2_callback(client, cq):
         return await checkout(client, cq, d[1], d[2])
 
 
-# ------------------------------------------------------------------
-# CHECKOUT QRIS (satu alur untuk semua produk)
-# ------------------------------------------------------------------
 async def checkout(client, cq, kind, key):
     user_id = cq.from_user.id
     name, amount = item_info(kind, key)
@@ -293,7 +270,7 @@ async def checkout(client, cq, kind, key):
     except Exception:
         pass
 
-    # tombol akses manual admin (di bukti & log pembayaran)
+    # tombol akses manual admin 
     if kind == "nf":
         admin_kb = ikb([[(" Kasih Netflix", f"p2nf {user_id}", P, E_NETFLIX)]])
     else:
@@ -438,9 +415,7 @@ async def checkout(client, cq, kind, key):
         _remove_file(qris_path)
 
 
-# ------------------------------------------------------------------
-# CALLBACK ADMIN: p2nf <uid> | p2done <uid> <kind> <key>
-# ------------------------------------------------------------------
+# Callback admins
 async def _mark(cq, text):
     try:
         await cq.message.edit_text(text)
@@ -473,10 +448,3 @@ async def pay2_admin(client, cq):
         return await cq.answer(f"Gagal kirim ke pembeli: {e}", show_alert=True)
     await _mark(cq, f"**✅ {name} ditandai selesai untuk user** <code>{uid}</code>")
 
-
-# ------------------------------------------------------------------
-# REGISTER HANDLER (contoh, sesuaikan dengan cara kamu daftar handler)
-# ------------------------------------------------------------------
-# bot.on_callback_query(filters.regex(r"^p2(star|buy) "))(pay2_callback)
-# bot.on_callback_query(filters.regex(r"^p2(nf|done) "))(pay2_admin)
-# bot.on_message(filters.command(["addnf", "delnf", "stoknf"]))(nf_cmd)
