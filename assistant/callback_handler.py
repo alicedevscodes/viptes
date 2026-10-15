@@ -16,7 +16,7 @@ from command import (apkinfocb, basic_plugins, bola_date, bola_matches,
                      sosmed_callback, start_home, token_cmd, tools_referral,
                      tools_token, tools_userbot, update_kode, use_referral,
                      user_aggre, viewchord, viewlyric, pilih_nokos, beli_nokos, kasih_nokos,
-                     pay2_admin, pay2_callback, pay2_menu)
+                     pay2_admin, pay2_back, pay2_callback, pay2_menu)
 from helpers import CMD, trigger
 from logs import logger
 
@@ -189,6 +189,8 @@ async def _(client, callback):
             return await viewlyric(client, callback)
         elif query.startswith("planusers"):
             plan = query.split()[1] if len(query.split()) > 1 else ""
+            if plan == "back":
+                return await pay2_back(client, callback)
             if plan in ("telprem", "stars", "netflix", "suntik"):
                 await callback.answer()
                 await callback.message.delete()
