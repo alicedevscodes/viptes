@@ -230,6 +230,17 @@ async def batal_pesan(client, callback_query):
         reply_markup=_menu_awal(user_id),
     )
 
+async def profil_user(client, callback_query):
+    try:
+        target_id = int(callback_query.data.split()[1])
+        user = await bot.get_users(target_id)
+    except Exception as error:
+        return await callback_query.answer(f"Gagal: {error}", show_alert=True)
+    nama = f"{user.first_name} {user.last_name or ''}".strip()
+    username = f"@{user.username}" if user.username else "-"
+    return await callback_query.answer(
+        f"Nama: {nama}\nID: {user.id}\nUsername: {username}", show_alert=True
+    )
 
 
 async def callback_alert(client, callback_query):
