@@ -615,13 +615,6 @@ async def tools_userbot(client, callback_query):
         )
 
 
-async def contact_admins(client, message):
-    reply_text = (
-        "<b>English:</b> Please write the message you want to convey with the hashtag #ask and please wait for the admin to reply.\n\n"
-        "<b>Indonesia:</b> Silahkan tulis pesan yang ingin anda sampaikan dengan hastag #ask dan mohon tunggu sampai admin membalas."
-    )
-    return await message.reply(reply_text)
-
 
 async def closed_user(client, callback_query):
 
