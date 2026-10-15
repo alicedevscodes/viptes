@@ -6,33 +6,27 @@ import traceback
 from datetime import timedelta
 from gc import get_objects
 
-
 import requests
 import wget
-from pyrogram.enums import ButtonStyle
 from pyrogram import enums, raw
 from pyrogram.errors import FloodWait, MessageNotModified
-from pyrogram.helpers import ikb, cell, divider, paragraph, send_rich, table
-from pyrogram.types import (
-    InlineKeyboardMarkup, InputRichMessage,
-    RichTextBold, RichTextCustomEmoji, RichTextTextMention, RichTextBold
-)
+from pyrogram.helpers import ikb
 from pyrogram.types import InlineKeyboardButton as Ikb
 from pyrogram.types import (InlineKeyboardMarkup, InputMediaAnimation,
                             InputMediaAudio, InputMediaDocument,
                             InputMediaPhoto, InputMediaVideo)
 from pyrogram.utils import unpack_inline_message_id
 from pytz import timezone
-from html import escape
+
 from clients import bot, navy
-from config import (API_BOTCHAX, OWNER_ID, API_MAELYN, BOT_NAME, COPY_ID, HELPABLE,
+from config import (API_BOTCHAX, API_MAELYN, BOT_NAME, COPY_ID, HELPABLE,
                     LOG_SELLER, SUDO_OWNERS, USENAME_OWNER)
 from database import dB, state
-from helpers import (ButtonUtils, build_help_rich, build_help_list_rich, emo, InlineRichProxy, Emoji, Message, Spotify, TokenReferal, Tools,
-                     YoutubeSearch, animate_proses, get_time, gens_font,
-                     paginate_modules, query_fonts, no_trigger, emo, youtube)
+from helpers import (ButtonUtils, Emoji, Message, TokenReferal, Tools,
+                      animate_proses, gens_font,
+                     paginate_modules, query_fonts)
 from logs import logger
-from .pmpermit_command import LIMIT
+
 
 MESSAGE_DICT = {}
 CONVERSATIONS = {}
@@ -45,20 +39,6 @@ EMO = {
     "gagal": (6253758805755038090, "⚠️"),
     "info": (5256143829672672750, "ℹ️"),
 }
-
-
-def ambil_pesan(uniq):
-    msg = state.get(uniq, "msg")
-    if msg:
-        return msg
-    get_id = state.get(uniq, "idm")
-    if get_id is None:
-        return None
-    return next((o for o in get_objects() if id(o) == get_id), None)
-
-def emo(emoji_id, alt="✨"):
-    return RichTextCustomEmoji(custom_emoji_id=str(emoji_id), alternative_text=alt)
-
 
 
 
