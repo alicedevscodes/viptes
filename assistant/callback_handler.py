@@ -69,13 +69,14 @@ async def _(client, callback):
     try:
         query = callback.data
         logger.info(f"Name callback query: {query}")
-        if query == "buttonclose":
-            return await closed_bot(client, callback)
+        
+        # Handler khusus untuk suntik
         if query == "contact_admin_suntik":
             await callback.answer()
             return await contact_admins(client, callback.message)
+            
         if query == "buttonclose":
-            return await closed_bot(client, callback)  
+            return await closed_bot(client, callback)
         elif query.startswith("close"):
             return await closed_user(client, callback)
         elif query.startswith("pm_warn"):
@@ -130,8 +131,7 @@ async def _(client, callback):
             return await gpt_voice(client, callback)
         elif query.startswith("cineplax"):
             return await cine_plax(client, callback)
-
-        elif query == ("go_payment"):
+        elif query == "go_payment":
             return await user_aggre(client, callback)
         elif query.startswith("kurang") or query.startswith("tambah"):
             return await kurang_tambah(client, callback)
@@ -151,9 +151,8 @@ async def _(client, callback):
             return await pay2_callback(client, callback)
         elif query.startswith("p2nf") or query.startswith("p2done"):
             return await pay2_admin(client, callback)
-        elif query == ("batal_payment"):
+        elif query == "batal_payment":
             return await cancel_payment(client, callback)
-
         elif query.startswith("del_ubot"):
             return await del_userbot(client, callback)
         elif query.startswith("prev_ub") or query.startswith("next_ub"):
@@ -168,14 +167,12 @@ async def _(client, callback):
             or query.startswith("deak_akun")
         ):
             return await tools_userbot(client, callback)
-
         elif query.startswith("claim_referral") or query.startswith("status_referral"):
             return await tools_referral(client, callback)
         elif query.startswith("use_expired") or query.startswith("use_userbot"):
             return await use_referral(client, callback)
         elif query.startswith("use_token") or query.startswith("revoke_token"):
             return await tools_token(client, callback)
-
         elif query.startswith("markdown"):
             return await cb_markdown(client, callback)
         elif query.startswith("help_"):
