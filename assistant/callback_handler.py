@@ -71,6 +71,11 @@ async def _(client, callback):
         logger.info(f"Name callback query: {query}")
         if query == "buttonclose":
             return await closed_bot(client, callback)
+        if query == "contact_admin_suntik":
+            await callback.answer()
+            return await contact_admins(client, callback.message)
+        if query == "buttonclose":
+            return await closed_bot(client, callback)  
         elif query.startswith("close"):
             return await closed_user(client, callback)
         elif query.startswith("pm_warn"):
