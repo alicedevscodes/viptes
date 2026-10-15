@@ -15,7 +15,8 @@ from command import (apkinfocb, basic_plugins, bola_date, bola_matches,
                      rest_donghua, restart_userbot, select_model,
                      sosmed_callback, start_home, token_cmd, tools_referral,
                      tools_token, tools_userbot, update_kode, use_referral,
-                     user_aggre, viewchord, viewlyric, pilih_nokos, beli_nokos, kasih_nokos)
+                     user_aggre, viewchord, viewlyric, pilih_nokos, beli_nokos, kasih_nokos,
+                     pay2_admin, pay2_callback, pay2_menu)
 from helpers import CMD, trigger
 from logs import logger
 
@@ -141,6 +142,10 @@ async def _(client, callback):
             return await pilih_nokos(client, callback)
         elif query.startswith("buynokos"):
             return await beli_nokos(client, callback)
+        elif query.startswith("p2star") or query.startswith("p2buy"):
+            return await pay2_callback(client, callback)
+        elif query.startswith("p2nf") or query.startswith("p2done"):
+            return await pay2_admin(client, callback)
         elif query == ("batal_payment"):
             return await cancel_payment(client, callback)
 
@@ -183,6 +188,11 @@ async def _(client, callback):
         elif query.startswith("viewlyric_"):
             return await viewlyric(client, callback)
         elif query.startswith("planusers"):
+            plan = query.split()[1] if len(query.split()) > 1 else ""
+            if plan in ("telprem", "stars", "netflix", "suntik"):
+                await callback.answer()
+                await callback.message.delete()
+                return await pay2_menu(client, callback.from_user.id, plan)
             return await chose_plan(client, callback)
         elif query.startswith("alertcb_"):
             return await callback_alert(client, callback)
