@@ -699,7 +699,7 @@ async def tampil_pilihan_nokos(client, user_id):
 
     return await client.send_message(
         user_id,
-        f"<b>📱 Pilih ID Nokos</b>\n<blockquote><b>Harga nokos:\n{message.format_rupiah(get_nokos_price(nokos_id))}.</b></blockquote>",
+        f"<b>📱 Pilih ID Nokos</b>\n<blockquote><b>Harga nokos:\n{Message.format_rupiah(get_nokos_price(nokos_id))}.</b></blockquote>",
         reply_markup=InlineKeyboardMarkup(rows),
     )
 
