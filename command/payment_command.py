@@ -365,7 +365,7 @@ async def tambah_nokos_cmd(client, message):
     parts = message.text.split()
     if len(parts) < 3 or not parts[1].isdigit():
         return await message.reply(
-            f"{I_SALAH} <b>Format salah.</b>"
+            f"{E_SALAH} <b>Format salah.</b>"
             f"{I_PAKET} Contoh: <code>/addnokos 1 0822222</code>"
             f"{I_PAKET} Bisa beberapa: <code>/addnokos 1 0822222 0833333</code>"
         )
@@ -388,7 +388,7 @@ async def tambah_nokos_cmd(client, message):
     text = f"{I_NOKOS} <b>{nokos_label(nokos_id)} berhasil disimpan.</b>"
     text += f"{I_PAKET} <b>Stok sekarang:</b> <code>{len(current)}</code>"
     if added:
-        text += f"{I_PLUS} <b>Ditambahkan:</b> <code>{', '.join(added)}</code>"
+        text += f"{E_PLUS} <b>Ditambahkan:</b> <code>{', '.join(added)}</code>"
     if duplicate:
         text += f"{I_SALAH} <b>Sudah ada:</b> <code>{', '.join(duplicate)}</code>"
     await message.reply(text)
