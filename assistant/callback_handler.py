@@ -73,7 +73,11 @@ async def _(client, callback):
         # Handler khusus untuk suntik
         if query == "contact_admin_suntik":
             await callback.answer()
-            return await jawab_pesan(client, callback.message)
+            return await jawab_pesan(client, callback)
+        elif query.startswith("batal "):
+            return await batal_pesan(client, callback)
+        elif query.startswith("profil"):
+            return await profil_user(client, callback)
             
         if query == "buttonclose":
             return await closed_bot(client, callback)
