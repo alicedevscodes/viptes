@@ -723,10 +723,16 @@ async def pilih_nokos(client, callback_query):
 📦 Stok: <code>{stok}</code></b></blockquote>
 
 <b>Lanjutkan pembelian?</b>""",
-        reply_markup=InlineKeyboardMarkup(
+        reply_markup=ikb(
             [
-                [ikb((" Beli Sekarang"), f"buynokos {nokos_id}", ButtonStyle.PRIMARY, "5373052667671093676")],
-                [ikb(("⬅️ Kembali"), "planusers nokos", ButtonStyle.DANGER, "5373052667671093676")],
+                [
+                  ((" Beli Sekarang"),
+                   f"buynokos {nokos_id}", ButtonStyle.PRIMARY, "5373052667671093676"),
+                ],
+                [
+                  (("⬅️ Kembali"),
+                   "planusers nokos", ButtonStyle.DANGER, "5373052667671093676"),
+                ],
             ]
         ),
     )
