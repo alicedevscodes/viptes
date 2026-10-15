@@ -699,7 +699,7 @@ async def tampil_pilihan_nokos(client, user_id):
 
     return await client.send_message(
         user_id,
-        f"<b>📱 Pilih ID Nokos</b>\n<blockquote><b>Harga nokos:\n{message.format_rupiah(get_nokk_price(nokos_id)}.</b></blockquote>",
+        f"<b>📱 Pilih ID Nokos</b>\n<blockquote><b>Harga nokos:\n{message.format_rupiah(get_nokos_price(nokos_id)}.</b></blockquote>",
         reply_markup=InlineKeyboardMarkup(rows),
     )
 
@@ -719,7 +719,7 @@ async def pilih_nokos(client, callback_query):
     await callback_query.edit_message_text(
         f"""<b>📱 {nokos_label(nokos_id)}</b>
 
-<blockquote><b>💵 Harga: <code>{Message.format_rupiah(price)}</code>
+<blockquote><b>💵 Harga: <code>{(Message.format_rupiah(price))}</code>
 📦 Stok: <code>{stok}</code></b></blockquote>
 
 <b>Lanjutkan pembelian?</b>""",
