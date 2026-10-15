@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 
 from pyrogram import filters
 from pyrogram.enums import ButtonStyle
-from pyrogram import helpers as pg_helpers
 from pyrogram.helpers import ikb, send_rich
 from pyrogram.types import InlineKeyboardButton as Btn, InlineKeyboardMarkup as Markup
 
@@ -39,14 +38,15 @@ async def pay2_back(client, cq):
     await cq.answer()
     markup = ButtonUtils.chose_plan()
     try:
-        edit_rich = getattr(pg_helpers, "edit_rich", None)
-        if edit_rich is None:
-            raise AttributeError("pyrogram.helpers.edit_rich tidak ada")
-        return await edit_rich(
-            client, cq.message.chat.id, cq.message.id, *menu_blocks(), reply_markup=markup
+        # Bot API 10.1: rich message diedit lewat editMessageText(rich_message=...)
+        from pyrogram.types import InputRichMessage
+
+        return await cq.edit_message_text(
+            rich_message=InputRichMessage(blocks=list(menu_blocks())),
+            reply_markup=markup,
         )
     except Exception as e:
-        logger.warning(f"pay2_back: edit rich gagal ({e}), kirim ulang menu")
+        logger.warning(f"pay2_back: edit rich gagal ({e!r}), kirim ulang menu")
     try:
         await cq.message.delete()
     except Exception:
