@@ -9,13 +9,14 @@ from datetime import datetime, timedelta
 
 from pyrogram import filters
 from pyrogram.enums import ButtonStyle
-from pyrogram.helpers import ikb
+from pyrogram import helpers as pg_helpers
+from pyrogram.helpers import ikb, send_rich
 from pyrogram.types import InlineKeyboardButton as Btn, InlineKeyboardMarkup as Markup
 
 from .payment_command import (
     QRIS_EXPIRE_MINUTES, CasakuError, _delete_qr_message, _remove_file,
-    generate_qris, make_qr_image, notify_admin, transactions, wait_for_payment,
-    waktu_jkt,
+    generate_qris, make_qr_image, menu_blocks, notify_admin, transactions,
+    wait_for_payment, waktu_jkt,
 )
 from config import LOG_SELLER, OWNER_ID
 from database import dB
@@ -31,28 +32,26 @@ E_OK = "6296367896398399651"
 E_BATAL = "5260293700088511294"
 E_ITEM = "5258397811329739167"
 BATAL = (" Batal", "planusers back", D, E_BATAL)  # kembali ke menu pilihan produk (edit pesan)
-MENU_TEXT = (
-    "<b>💎 Seblak Ultra Pedasss</b>\n"
-    "<blockquote><b>Pilih produk yang kamu butuhkan.</b></blockquote>"
-)
-
-
 async def pay2_back(client, cq):
-    """Tombol Batal: edit pesan ini jadi menu pilihan produk (tanpa hapus/kirim baru)."""
+    """Tombol Batal: kembali ke menu pilihan produk yang SAMA dengan user_aggre (rich).
+    Coba edit pesan dulu; kalau fork tidak punya fungsi edit rich, fallback hapus + kirim ulang."""
     logger.info(f"pay2_back dipanggil oleh {cq.from_user.id}")
     await cq.answer()
+    markup = ButtonUtils.chose_plan()
     try:
-        await cq.edit_message_text(MENU_TEXT, reply_markup=ButtonUtils.chose_plan())
-    except Exception:
-        logger.error(f"ERROR pay2_back: {traceback.format_exc()}")
-        # fallback: pesan tidak bisa diedit -> kirim menu baru
-        try:
-            await cq.message.delete()
-        except Exception:
-            pass
-        await client.send_message(
-            cq.from_user.id, MENU_TEXT, reply_markup=ButtonUtils.chose_plan()
+        edit_rich = getattr(pg_helpers, "edit_rich", None)
+        if edit_rich is None:
+            raise AttributeError("pyrogram.helpers.edit_rich tidak ada")
+        return await edit_rich(
+            client, cq.message.chat.id, cq.message.id, *menu_blocks(), reply_markup=markup
         )
+    except Exception as e:
+        logger.warning(f"pay2_back: edit rich gagal ({e}), kirim ulang menu")
+    try:
+        await cq.message.delete()
+    except Exception:
+        pass
+    await send_rich(client, cq.from_user.id, *menu_blocks(), reply_markup=markup)
 
 
 def kb(rows, url_rows=()):
