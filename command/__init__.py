@@ -16,7 +16,7 @@ from .callback_command import (apkinfocb, bola_date, bola_matches,
                                prevnext_userbot, prevnext_userbot2,
                                refresh_cat, rest_anime, rest_comic,
                                rest_donghua, select_model, sosmed_callback,
-                               tools_userbot, viewchord, viewlyric, contact_admins, jawab_pesan, batal_pesan)
+                               tools_userbot, viewchord, viewlyric, contact_admins, jawab_pesan, batal_pesan, profil_user)
 from .copy_command import copyall2_cmd, copyall_cmd
 from .gruplog_command import (ADD_ME, DELETED, EDITED, KICK_ME, LOGS_GROUP,
                               REPLY, logs_cmd)
