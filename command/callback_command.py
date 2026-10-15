@@ -209,6 +209,26 @@ async def jawab_pesan(client, callback_query):
         if get.id in SUPPORT:
             SUPPORT.remove(get.id)
 
+async def batal_pesan(client, callback_query):
+    user_id = callback_query.from_user.id
+    try:
+        await callback_query.answer()
+    except Exception:
+        pass
+    # hapus dari SUPPORT dulu, supaya contact_admins/jawab_pesan tahu ini dibatalkan
+    if user_id in SUPPORT:
+        SUPPORT.remove(user_id)
+    _batalkan_ask(user_id)
+    try:
+        await callback_query.message.delete()
+    except Exception:
+        pass
+    return await kirim_rich(
+        user_id,
+        "batal",
+        "Proses di batalkan.",
+        reply_markup=_menu_awal(user_id),
+    )
 
 
 
