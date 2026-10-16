@@ -26,7 +26,7 @@ from pytz import timezone
 
 from clients import bot, navy
 from config import (API_BOTCHAX, API_MAELYN, BOT_NAME, COPY_ID, HELPABLE,
-                    LOG_SELLER, SUDO_OWNERS, USENAME_OWNER)
+                    LOG_SELLER, SUDO_OWNERS, OWNER_ID, USENAME_OWNER)
 from database import dB, state
 from helpers import (ButtonUtils, Emoji, Message, TokenReferal, Tools,
                       animate_proses, gens_font, no_trigger,
@@ -221,6 +221,7 @@ async def jawab_pesan(client, callback_query):
             [[(" Batalkan", f"batal {user_id}", ButtonStyle.DANGER, "6253758805755038090")]]
         )
         pesan = await bot.ask(
+            LOG_SELLER,
             user_id,
             f"<b>✉️ Silakan tulis pesan anda: {full_name}</b>",
             reply_markup=button,
