@@ -221,7 +221,7 @@ async def jawab_pesan(client, callback_query):
     try:
         pesan = await bot.ask(
             chat_id,
-            f"<b>✉️ {full_name}, balas (reply) pesan ini dengan jawabanmu untuk buyer.</b>",
+            f"<b>✉️ {full_name}, balas (reply) pesan ini.</b>",
             filters=filters.user(admin.id),
             reply_markup=_tombol_batal("admin", admin.id),
             reply_to_message_id=log_msg_id,
