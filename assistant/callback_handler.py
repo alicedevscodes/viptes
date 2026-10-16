@@ -80,17 +80,19 @@ async def _(client, callback):
         query = callback.data
         logger.info(f"Name callback query: {query}")
 
-        # Handler khusus untuk suntik + balas pesan admin/buyer
-        if query == "contact_admin_suntik":
+        # Percakapan buyer <-> owner (sesi bot.ask panjang -> jalan di background)
+        # - contact_admin_suntik / balas_admin : sisi BUYER (tulis pesan di PM bot)
+        # - jawab_pesan <buyer_id>             : sisi OWNER (balas di grup log seller)
+        if query in ("contact_admin_suntik", "balas_admin"):
             await callback.answer()
+            topik = "Order Suntik GC/CH" if query == "contact_admin_suntik" else None
             asyncio.create_task(
-                _jalankan_bg(
-                    contact_admins(client, callback, topik="Order Suntik GC/CH")
-                )
+                _jalankan_bg(contact_admins(client, callback, topik=topik))
             )
             return
         elif query.startswith("jawab_pesan"):
-            return await jawab_pesan(client, callback)
+            asyncio.create_task(_jalankan_bg(jawab_pesan(client, callback)))
+            return
         elif query.startswith("batal "):
             return await batal_pesan(client, callback)
         elif query.startswith("profil"):
