@@ -9,7 +9,7 @@ from gc import get_objects
 import requests
 import wget
 
-from pyrogram import enums, raw
+from pyrogram import enums, filters, raw
 from pyrogram.enums import ButtonStyle
 from pyrogram.errors import FloodWait, MessageNotModified
 from pyrogram.helpers import ikb, cell, divider, paragraph, send_rich, table
@@ -110,6 +110,11 @@ def _batalkan_ask(chat_id):
 def _menu_awal(user_id):
     return ButtonUtils.start_menu(is_admin=user_id in SUDO_OWNERS)
 
+def _tombol_batal(jenis, user_id):
+    """jenis: 'user' (sesi buyer) atau 'admin' (sesi owner)."""
+    return ikb(
+        [[(" Batalkan", f"batal {jenis} {user_id}", ButtonStyle.DANGER, "6253758805755038090")]]
+    )
 
 async def kirim_rich(chat_id, jenis, teks, reply_markup=None):
     emoji_id, fallback = EMO[jenis]
@@ -122,33 +127,33 @@ async def kirim_rich(chat_id, jenis, teks, reply_markup=None):
     )
 
 
+# ---------------- SISI BUYER ----------------
 async def contact_admins(client, message, topik=None):
-    """Dipanggil dari Message (tombol keyboard) ATAU CallbackQuery (tombol inline, mis. Suntik).
-    `topik` (opsional): label order yang ikut dikirim ke LOG supaya admin tahu asal pesannya."""
+    """Buyer menulis pesan -> dikirim ke grup LOG_SELLER.
+    Bisa dipanggil dari Message (keyboard) maupun CallbackQuery (tombol inline).
+    `topik` (opsional) = label order yang ikut dikirim ke grup log."""
     if client.me.id != bot.id:
         return
     user = message.from_user
     user_id = user.id
     full_name = f"{user.first_name} {user.last_name or ''}".strip()
+    key = f"user:{user_id}"
 
-    if user_id in SUPPORT:
+    if key in SUPPORT:
         return await kirim_rich(
             user_id, "info", "Kamu masih dalam sesi kirim pesan, selesaikan dulu."
         )
 
-    SUPPORT.append(user_id)
+    SUPPORT.append(key)
     try:
-        button = ikb(
-            [[(" Batalkan", f"batal {user_id}", ButtonStyle.DANGER, "6253758805755038090")]]
-        )
         pesan = await bot.ask(
             user_id,
             f"<b>✍️ Tulis pesan anda: {full_name}</b>",
-            reply_markup=button,
+            reply_markup=_tombol_batal("user", user_id),
             timeout=300,
         )
         # sesi sudah dibatalkan lewat tombol Batalkan
-        if user_id not in SUPPORT:
+        if key not in SUPPORT:
             return
         if pesan.text and pesan.text in no_trigger:
             await pesan.delete()
@@ -161,131 +166,126 @@ async def contact_admins(client, message, topik=None):
 
         buttons = ikb(
             [
-                [
-                    (" Akun", f"profil {user_id}", ButtonStyle.PRIMARY, "5256143829672672750"),
-                ],
-                [
-                    (" Jawab Pesan", f"jawab_pesan {user_id}", ButtonStyle.SUCCESS, "6046412391887935443"),
-                ],
+                [(" Akun", f"profil {user_id}", ButtonStyle.PRIMARY, "5256143829672672750")],
+                [(" Jawab Pesan", f"jawab_pesan {user_id}", ButtonStyle.SUCCESS, "6046412391887935443")],
             ]
         )
         if topik:
-            await bot.send_message(LOG_SELLER, f"<b>📌 {topik}</b>")
+            await bot.send_message(
+                LOG_SELLER,
+                f"<b>📌 {topik}</b>\n<b>Dari:</b> <a href=tg://user?id={user_id}>{full_name}</a>",
+            )
         await pesan.copy(LOG_SELLER, reply_markup=buttons)
         return await kirim_rich(user_id, "sukses", f"Pesan anda terkirim: {full_name}")
     except asyncio.TimeoutError:
         return await kirim_rich(user_id, "info", "Sesi berakhir, silakan coba lagi.")
     except Exception as error:
-        if user_id not in SUPPORT:  # dibatalkan user, bukan error
+        if key not in SUPPORT:  # dibatalkan user, bukan error
             return
         logger.error(f"Error contact_admins ({user_id}): {traceback.format_exc()}")
         return await kirim_rich(user_id, "gagal", f"ERROR: {error}")
     finally:
-        if user_id in SUPPORT:
-            SUPPORT.remove(user_id)
+        if key in SUPPORT:
+            SUPPORT.remove(key)
 
 
+# ---------------- SISI OWNER (di grup LOG_SELLER) ----------------
 async def jawab_pesan(client, callback_query):
-    """Tombol 'Jawab Pesan'.
-    - Di LOG: hanya admin (SUDO_OWNERS) yang boleh, target = pembeli.
-    - Di pesan balasan admin: pembeli boleh, karena target = admin."""
-    clicker = callback_query.from_user
-    try:
-        target_id = int(callback_query.data.split()[1])
-    except (IndexError, ValueError):
-        return await callback_query.answer("Data tombol tidak valid.", show_alert=True)
-
-    if clicker.id not in SUDO_OWNERS and target_id not in SUDO_OWNERS:
+    """Owner menjawab buyer. Data tombol: jawab_pesan <buyer_id>."""
+    admin = callback_query.from_user
+    if admin.id not in SUDO_OWNERS:
         return await callback_query.answer(
             "Gausah dipencet ya anjing. Lu bukan admin", show_alert=True
         )
-    logger.info(f"jawab_pesan: klik oleh {clicker.id}, target {target_id}")
+    try:
+        buyer_id = int(callback_query.data.split()[1])
+    except (IndexError, ValueError):
+        return await callback_query.answer("Data tombol tidak valid.", show_alert=True)
 
-    user_id = clicker.id
-    full_name = f"{clicker.first_name} {clicker.last_name or ''}".strip()
-
-    # jawab dulu supaya spinner tombol berhenti sebelum bot.ask menunggu
     try:
         await callback_query.answer()
     except Exception:
         pass
 
-    if user_id in SUPPORT:
+    chat_id = callback_query.message.chat.id  # grup log seller
+    log_msg_id = callback_query.message.id  # pesan buyer yang dijawab
+    full_name = f"{admin.first_name} {admin.last_name or ''}".strip()
+    key = f"admin:{admin.id}"
+
+    if key in SUPPORT:
         return await kirim_rich(
-            user_id, "info", "Kamu masih dalam sesi membalas pesan, selesaikan dulu."
+            chat_id, "info", "Kamu masih dalam sesi membalas pesan, selesaikan dulu."
         )
 
-    SUPPORT.append(user_id)
+    SUPPORT.append(key)
     try:
-        button = ikb(
-            [[(" Batalkan", f"batal {user_id}", ButtonStyle.DANGER, "6253758805755038090")]]
-        )
         pesan = await bot.ask(
-            LOG_SELLER,
-            user_id,
-            f"<b>✉️ Silakan tulis pesan anda: {full_name}</b>",
-            reply_markup=button,
+            chat_id,
+            f"<b>✉️ {full_name}, balas (reply) pesan ini dengan jawabanmu untuk buyer.</b>",
+            filters=filters.user(admin.id),
+            reply_markup=_tombol_batal("admin", admin.id),
+            reply_to_message_id=log_msg_id,
             timeout=300,
         )
-        if user_id not in SUPPORT:
+        if key not in SUPPORT:  # dibatalkan lewat tombol
             return
         if pesan.text and pesan.text in no_trigger:
             await pesan.delete()
-            return await kirim_rich(
-                user_id,
-                "batal",
-                "Proses di batalkan.",
-                reply_markup=_menu_awal(user_id),
-            )
+            return await kirim_rich(chat_id, "batal", "Proses di batalkan.")
 
-        if target_id != OWNER_ID:
-            buttons = ikb(
-                [[(" Jawab Pesan", f"jawab_pesan {user_id}", ButtonStyle.SUCCESS, "6046412391887935443")]]
-            )
-        else:
-            buttons = ikb(
-                [
-                    [
-                        (" Akun", f"profil {user_id}", ButtonStyle.PRIMARY, "5256143829672672750"),
-                    ],
-                    [
-                        (" Jawab Pesan", f"jawab_pesan {user_id}", ButtonStyle.SUCCESS, "6046412391887935443"),
-                    ],
-                ]
-            )
-        await pesan.copy(target_id, reply_markup=buttons)
-        return await kirim_rich(user_id, LOG_SELLER, "sukses", f"Pesan Balasan Terkirim : {full_name}")
+        balas = ikb(
+            [[(" Balas Admin", "balas_admin", ButtonStyle.SUCCESS, "6046412391887935443")]]
+        )
+        await pesan.copy(buyer_id, reply_markup=balas)
+        return await kirim_rich(
+            chat_id, "sukses", f"Balasan terkirim ke buyer: {buyer_id}"
+        )
     except asyncio.TimeoutError:
-        return await kirim_rich(user_id, LOG_SELLER, "info", "Sesi berakhir, silakan coba lagi.")
+        return await kirim_rich(chat_id, "info", "Sesi berakhir, silakan coba lagi.")
     except Exception as error:
-        if user_id not in SUPPORT:
+        if key not in SUPPORT:
             return
-        logger.error(f"Error jawab_pesan ({user_id}): {traceback.format_exc()}")
-        return await kirim_rich(user_id, "gagal", f"ERROR: {error}")
+        logger.error(f"Error jawab_pesan ({admin.id}): {traceback.format_exc()}")
+        return await kirim_rich(chat_id, "gagal", f"ERROR: {error}")
     finally:
-        if user_id in SUPPORT:
-            SUPPORT.remove(user_id)
-          
+        if key in SUPPORT:
+            SUPPORT.remove(key)
+
+
+# ---------------- TOMBOL BATALKAN (buyer & owner) ----------------
 async def batal_pesan(client, callback_query):
-    user_id = callback_query.from_user.id
+    """Data tombol: batal user <id>  |  batal admin <id>."""
+    try:
+        _, jenis, owner_id = callback_query.data.split()
+        owner_id = int(owner_id)
+    except ValueError:
+        return await callback_query.answer("Data tombol tidak valid.", show_alert=True)
+
+    if callback_query.from_user.id != owner_id:
+        return await callback_query.answer("Tombol ini bukan untukmu.", show_alert=True)
+
     try:
         await callback_query.answer()
     except Exception:
         pass
+
+    chat_id = callback_query.message.chat.id
+    key = f"{jenis}:{owner_id}"
     # hapus dari SUPPORT dulu, supaya contact_admins/jawab_pesan tahu ini dibatalkan
-    if user_id in SUPPORT:
-        SUPPORT.remove(user_id)
-    _batalkan_ask(user_id)
+    if key in SUPPORT:
+        SUPPORT.remove(key)
+    _batalkan_ask(chat_id)
     try:
         await callback_query.message.delete()
     except Exception:
         pass
     return await kirim_rich(
-        user_id,
+        chat_id,
         "batal",
         "Proses di batalkan.",
-        reply_markup=_menu_awal(user_id),
+        reply_markup=_menu_awal(owner_id) if jenis == "user" else None,
     )
+          
 
 async def profil_user(client, callback_query):
     try:
