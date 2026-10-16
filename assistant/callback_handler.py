@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 
 from command import (apkinfocb, basic_plugins, bola_date, bola_matches,
@@ -22,6 +23,15 @@ from logs import logger
 
 MESSAGE_DICT = {}
 CONVERSATIONS = {}
+
+
+async def _jalankan_bg(coro):
+    """Jalankan flow panjang (bot.ask sampai 5 menit) di background supaya handler callback
+    langsung selesai dan tombol lain (Batalkan, Jawab Pesan di log) tidak ikut tertahan."""
+    try:
+        await coro
+    except Exception:
+        logger.error(f"Background task error: {traceback.format_exc()}")
 
 
 @CMD.REGEX(trigger)
@@ -69,11 +79,16 @@ async def _(client, callback):
     try:
         query = callback.data
         logger.info(f"Name callback query: {query}")
-        
-        # Handler khusus untuk suntik
+
+        # Handler khusus untuk suntik + balas pesan admin/buyer
         if query == "contact_admin_suntik":
             await callback.answer()
-            return await contact_admins(client, callback)
+            asyncio.create_task(
+                _jalankan_bg(
+                    contact_admins(client, callback, topik="Order Suntik GC/CH")
+                )
+            )
+            return
         elif query.startswith("jawab_pesan"):
             return await jawab_pesan(client, callback)
         elif query.startswith("batal "):
