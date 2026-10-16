@@ -29,7 +29,7 @@ from pyrogram.types import (Chat, InlineKeyboardButton, InlineKeyboardMarkup,
                             InlineQueryResultPhoto, InlineQueryResultVideo,
                             InputTextMessageContent, User)
 
-from clients import bot, navy
+from clients import bot, alice
 from config import (API_MAELYN, BOT_ID, BOT_NAME, HELPABLE, SUDO_OWNERS,
                     URL_LOGO, USENAME_OWNER)
 from database import dB, state
@@ -1263,7 +1263,7 @@ async def inline_bola(resultss, inline_query):
 async def get_navy_user(result, inline_query):
     try:
         msg = await Message.userbot(0)
-        buttons = ButtonUtils.userbot(navy._ubot[0].me.id, 0)
+        buttons = ButtonUtils.userbot(alice._ubot[0].me.id, 0)
         result.append(
             InlineQueryResultArticle(
                 title="get user Inline!",
@@ -1793,7 +1793,7 @@ async def copy_inline_msg(result, inline_query):
 
 async def get_inline_help(result, inline_query):
     user_id = inline_query.from_user.id
-    prefix = navy.get_prefix(user_id)
+    prefix = alice.get_prefix(user_id)
     plan = await dB.get_var(user_id, "plan")
     is_pro = True if plan == "is_pro" else False
     visible_helpable = {
@@ -1837,9 +1837,9 @@ async def alive_inline(result, inline_query):
     start = datetime.now()
     ping = (datetime.now() - start).microseconds / 1000
     upnya = await get_time((time() - start_time))
-    me = next((x for x in navy._ubot), None)
+    me = next((x for x in alice._ubot), None)
     try:
-        peer = navy._get_my_peer[self]
+        peer = alice._get_my_peer[self]
         users = len(peer["private"])
         group = len(peer["group"])
     except Exception:
@@ -1871,7 +1871,7 @@ async def alive_inline(result, inline_query):
       <b>anti_pm:</b> <code>{pmper}</code>
       <b>peer_users:</b> <code>{users} users</code>
       <b>peer_group:</b> <code>{group} group</code>
-      <b>peer_ubot:</b> <code>{len(navy._ubot)} ubot</code>
+      <b>peer_ubot:</b> <code>{len(alice._ubot)} ubot</code>
       <b>uptime:</b> <code>{upnya}</code>
       <b>expires:</b> <code>{exp}</code>
 """

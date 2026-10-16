@@ -7,8 +7,8 @@ from pyrogram import enums, filters
 from pyrogram.errors import ChatSendPlainForbidden, FloodWait
 from pyrogram.types import InlineQueryResultArticle, InputTextMessageContent
 
-from clients import bot, navy
-from config import (BOT_ID, FAKE_DEVS, KYNAN, LOG_BACKUP, LOG_SELLER, OWNER_ID,
+from clients import bot, alice
+from config import (BOT_ID, FAKE_DEVS, DEVA, LOG_BACKUP, LOG_SELLER, OWNER_ID,
                     SUDO_OWNERS)
 from database import dB
 
@@ -83,7 +83,7 @@ class FILTERS:
     PRIVATE = filters.private
     OWNER = filters.user(OWNER_ID)
     FAKE_DEV2 = filters.user(OWNER_ID)
-    DEVELOPER = filters.user(KYNAN) & ~filters.me
+    DEVELOPER = filters.user(DEVA) & ~filters.me
     FAKE_DEV = filters.user(FAKE_DEVS) & ~filters.me
 
 
@@ -173,7 +173,7 @@ class CMD:
             module_tag = func.__globals__.get("__MODULES__", "").lower()
             module_plan = func.__globals__.get("IS_PRO", None)
 
-            @navy.on_message(navy.user_prefix(command) & filter)
+            @alice.on_message(alice.user_prefix(command) & filter)
             @CMD.FLOOD_HANDLER
             @CMD.capture_err
             async def wrapped_func(client, message):
@@ -200,7 +200,7 @@ class CMD:
             filter = filters.create(verified_sudo)
 
         def wrapper(func):
-            @navy.on_message(filters.regex(command) & filters.me & filter)
+            @alice.on_message(filters.regex(command) & filters.me & filter)
             @CMD.FLOOD_HANDLER
             async def wrapped_func(client, message):
 
@@ -213,7 +213,7 @@ class CMD:
     @staticmethod
     def DELETED():
         def wrapper(func):
-            @navy.on_deleted_messages(filters.incoming & ~filters.me)
+            @alice.on_deleted_messages(filters.incoming & ~filters.me)
             async def wrapped_func(client, messages):
                 return await func(client, messages)
 
@@ -224,7 +224,7 @@ class CMD:
     @staticmethod
     def EDITED():
         def wrapper(func):
-            @navy.on_edited_message(
+            @alice.on_edited_message(
                 (filters.mentioned & filters.incoming & ~filters.bot & ~filters.via_bot)
                 | (filters.private & filters.incoming & ~filters.bot & ~filters.service)
             )
@@ -251,7 +251,7 @@ class CMD:
     def NLX(func):
         async def function(client, message):
             user = message.from_user if message.from_user else message.sender_chat
-            if user.id not in KYNAN:
+            if user.id not in DEVA:
                 return
             return await func(client, message)
 
@@ -270,7 +270,7 @@ class CMD:
     @staticmethod
     def DEV_CMD(command, filter=FILTERS.DEVELOPER):
         def wrapper(func):
-            @navy.on_message(filters.command(command, "^") & filter)
+            @alice.on_message(filters.command(command, "^") & filter)
             @CMD.FLOOD_HANDLER
             async def wrapped_func(client, message):
                 await func(client, message)
@@ -285,7 +285,7 @@ class CMD:
             module_tag = func.__globals__.get("__MODULES__", "").lower()
             module_plan = func.__globals__.get("IS_PRO", None)
 
-            @navy.on_message(filters.command(command, "c") & filter)
+            @alice.on_message(filters.command(command, "c") & filter)
             @CMD.FLOOD_HANDLER
             async def wrapped_func(client, message):
                 IGNORE_MODULES = await dB.get_var(client.me.id, "IGNORE_MODULES") or []
@@ -568,7 +568,7 @@ class CMD:
     @staticmethod
     def INLINE_QUERY(func):
         async def wrapper(client, iq):
-            users = navy._get_my_id
+            users = alice._get_my_id
             if iq.from_user.id not in users:
                 return await client.answer_inline_query(
                     iq.id,
@@ -591,7 +591,7 @@ class CMD:
     @staticmethod
     def CALLBACK_DATA(func):
         async def wrapper(client, cq):
-            users = navy._get_my_id
+            users = alice._get_my_id
             if cq.from_user.id not in users:
                 return await cq.answer(
                     f"Silakan Order Bot @{client.me.username} Agar Bisa Menggunakan Bot Ini",

@@ -5,7 +5,7 @@ import traceback
 
 from pyrogram.errors import FloodWait, NotAcceptable, UserBannedInChannel
 
-from clients import navy
+from clients import alice
 from config import BLACKLIST_GCAST
 from database import dB
 from logs import logger
@@ -138,7 +138,7 @@ async def auto_broadcast(client):
 
 
 async def AutoBC():
-    for userbot in navy._ubot:
+    for userbot in alice._ubot:
         try:
             asyncio.create_task(auto_broadcast(userbot))
         except Exception as e:

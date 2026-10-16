@@ -1,1 +1,1 @@
-from .clients import BaseClient, Bot, UserBot, bot, navy
+from .clients import BaseClient, Bot, UserBot, bot, alice

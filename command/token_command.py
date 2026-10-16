@@ -13,7 +13,7 @@ from pyrogram.types import (KeyboardButton, ReplyKeyboardMarkup,
 from pytz import timezone
 
 import config
-from clients import UserBot, bot, navy
+from clients import UserBot, bot, alice
 from config import API_HASH, API_ID, LOG_SELLER, WAJIB_JOIN, VIDEO_URL
 from database import dB
 from helpers import ButtonUtils, TokenReferal, Tools, no_trigger, stoped_ubot
@@ -102,7 +102,7 @@ async def use_referral(client, query):
     user_id = query.from_user.id
     data = query.data
     if data == "use_expired":
-        if user_id not in navy._get_my_id:
+        if user_id not in alice._get_my_id:
             buttons = ikb([[("Deploy Userbot", "use_userbot")]])
             return await query.edit_message_text(
                 "<b>Maaf, kamu tidak bisa menambahkan expired ke akun ini karena akun ini belum memasang userbot. Silahkan pilih tombol Deploy Userbot!!</b>",
@@ -475,7 +475,7 @@ async def tools_token(client, query):
                     session_string=session_string,
                 )
                 if not user_id == kn_client.me.id:
-                    navy._ubot.remove(kn_client)
+                    alice._ubot.remove(kn_client)
                     await dB.remove_ubot(kn_client.me.id)
                     await kn_client.log_out()
                     return await bot_msg.edit(
@@ -496,7 +496,7 @@ async def tools_token(client, query):
                         await kn_client.join_chat(chat)
                     except Exception:
                         pass
-                prefix = navy.get_prefix(kn_client.me.id)
+                prefix = alice.get_prefix(kn_client.me.id)
                 keyb = ButtonUtils.start_menu(is_admin=False)
                 exp = await dB.get_expired_date(kn_client.me.id)
                 expir = exp.astimezone(timezone("Asia/Jakarta")).strftime(
@@ -537,7 +537,7 @@ async def tools_token(client, query):
                 logger.error(f"ERROR CLAIM TOKEN: {traceback.format_exc()}")
     elif data == "revoke_token":
         buttons = ikb([[("❌ Tutup", "buttonclose")]])
-        if user_id not in navy._get_my_id:
+        if user_id not in alice._get_my_id:
             return await query.edit_message_text(
                 "<b>Maaf, kamu bukan pengguna userbot ini dan kamu tidak memiliki token.</b>",
                 reply_markup=buttons,

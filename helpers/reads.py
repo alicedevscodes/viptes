@@ -6,7 +6,7 @@ from pyrogram.errors import (ChannelPrivate, FloodWait, PeerIdInvalid,
                              UserBannedInChannel)
 from pyrogram.raw.functions.messages import ReadMentions
 
-from clients import navy
+from clients import alice
 from database import dB
 from logs import logger
 
@@ -76,7 +76,7 @@ async def safe_invoke_read_mentions(client, chat_id):
 
 
 async def ReadUser():
-    for user in navy._ubot:
+    for user in alice._ubot:
         for mode in CHAT_TYPES:
             try:
                 asyncio.create_task(auto_read(user, mode))

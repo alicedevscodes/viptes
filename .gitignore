@@ -1,1 +1,10 @@
-__pycache__
+__pycache__venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+*.session
+*.session-journal
+downloads/
+qris_*.png
+*.log

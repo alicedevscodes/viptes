@@ -11,7 +11,7 @@ from pyrogram.types import (KeyboardButton, ReplyKeyboardMarkup,
                             ReplyKeyboardRemove)
 from pytz import timezone
 
-from clients import UserBot, bot, navy
+from clients import UserBot, bot, alice
 from config import (AKSES_DEPLOY, API_HASH, API_ID, BOT_ID, LOG_SELLER,
                     MAX_BOT, SUDO_OWNERS, WAJIB_JOIN)
 from database import dB, state
@@ -33,7 +33,7 @@ async def setExpiredUser(user_id):
 
 async def mari_buat_userbot(client, message):
     user_id = message.from_user.id
-    if len(navy._ubot) == MAX_BOT:
+    if len(alice._ubot) == MAX_BOT:
         buttons = kb(
             [["💬 Hubungi Admins"]], resize_keyboard=True, one_time_keyboard=True
         )
@@ -41,7 +41,7 @@ async def mari_buat_userbot(client, message):
             f"""
 <b>❌ Tidak dapat membuat Userbot !</b>
 
-<b>📚 Karena Telah Mencapai Yang Telah Di Tentukan : {len(navy._ubot)}</b>
+<b>📚 Karena Telah Mencapai Yang Telah Di Tentukan : {len(alice._ubot)}</b>
 
 <b>👮‍♂ Silakan Hubungi Admins . </b>
 """,
@@ -229,7 +229,7 @@ async def create_userbots(client, message):
             session_string=session_string,
         )
         if not user_id == kn_client.me.id:
-            navy._ubot.remove(kn_client)
+            alice._ubot.remove(kn_client)
             await dB.remove_ubot(kn_client.me.id)
             await kn_client.log_out()
             return await bot_msg.edit(
@@ -256,7 +256,7 @@ async def create_userbots(client, message):
                 await kn_client.join_chat(chat)
             except Exception:
                 pass
-        prefix = navy.get_prefix(kn_client.me.id)
+        prefix = alice.get_prefix(kn_client.me.id)
         keyb = ButtonUtils.start_menu(is_admin=False)
         exp = await dB.get_expired_date(kn_client.me.id)
         PLAN = (

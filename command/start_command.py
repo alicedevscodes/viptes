@@ -22,7 +22,7 @@ from pyrogram.helpers import (
 )
 from pyrogram.types import InputRichMessage, RichTextMarked, RichTextTextMention, RichTextBold, RichTextCustomEmoji
 from clients import bot
-from config import KYNAN, LOG_SELLER, SUDO_OWNERS, BOT_NAME
+from config import DEVA, LOG_SELLER, SUDO_OWNERS, BOT_NAME
 from database import dB, state
 from helpers import Basic_Effect, ButtonUtils, Message, Tools, no_commands, emos
 from logs import logger
@@ -43,7 +43,7 @@ async def gen_image(client):
 
 async def setimg_start(client, message):
     user = message.from_user if message.from_user else message.sender_chat
-    if user.id not in KYNAN:
+    if user.id not in DEVA:
         return
     if message.reply_to_message:
         proses = await message.reply("<blockquote>**Tunggu sebentar..**</blockquote>")
@@ -78,7 +78,7 @@ async def setimg_start(client, message):
 
 async def setads_bot(client, message):
     user = message.from_user if message.from_user else message.sender_chat
-    if user.id not in KYNAN:
+    if user.id not in DEVA:
         return
     if not message.reply_to_message:
         return await message.reply("**Silahkan balas ke teks**")

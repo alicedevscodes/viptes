@@ -7,7 +7,7 @@ from pyrogram.errors import (ChannelInvalid, FloodWait, InputUserDeactivated,
 from pyrogram.helpers import kb
 from pytz import timezone
 
-from clients import bot, navy
+from clients import bot, alice
 from config import AKSES_DEPLOY, BOT_ID, LOG_SELLER, SUDO_OWNERS
 from database import dB, state
 
@@ -255,7 +255,7 @@ async def mass_report(client, message):
         )
         status_msg = await message.reply(f"⏳ Reporting @{uname}...")
         try:
-            for user in navy._ubot:
+            for user in alice._ubot:
                 try:
                     peer = await user.resolve_peer(f"@{uname}")
                 except UsernameNotOccupied:
@@ -297,7 +297,7 @@ async def mass_report(client, message):
                 "and promotes harmful content. Under platform guidelines, this account "
                 "should be suspended. Please review and take appropriate action."
             )
-            for user in navy._ubot:
+            for user in alice._ubot:
                 try:
                     peer = await user.resolve_peer(f"@{uname}")
                 except UsernameNotOccupied:

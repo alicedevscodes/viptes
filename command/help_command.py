@@ -1,6 +1,6 @@
 from pyrogram.types import InlineKeyboardMarkup
 
-from clients import navy
+from clients import alice
 from config import BOT_NAME, HELPABLE, USENAME_OWNER
 from database import dB
 from helpers import paginate_modules
@@ -14,7 +14,7 @@ async def basic_plugins(client, message):
     visible_helpable = {
         name: data for name, data in HELPABLE.items() if is_pro or not data["is_pro"]
     }
-    prefix = navy.get_prefix(user_id)
+    prefix = alice.get_prefix(user_id)
     text_help = (
         await dB.get_var(user_id, "text_help")
         or f"**🤖 {BOT_NAME} by {USENAME_OWNER}**"
@@ -39,7 +39,7 @@ Inline Help
 
 async def pro_plugins(client, message):
     user_id = message.from_user.id
-    prefix = navy.get_prefix(user_id)
+    prefix = alice.get_prefix(user_id)
     text_help = (
         await dB.get_var(user_id, "text_help")
         or f"**🤖 {BOT_NAME} by {USENAME_OWNER}**"

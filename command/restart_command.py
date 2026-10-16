@@ -3,7 +3,7 @@ import importlib
 
 from pyrogram.helpers import kb
 
-from clients import UserBot, bot, navy
+from clients import UserBot, bot, alice
 from config import BOT_NAME
 from database import dB
 from helpers import Emoji
@@ -15,7 +15,7 @@ keyboard = kb([["↩️ Beranda"]], resize_keyboard=True, one_time_keyboard=True
 async def reset_costum_text(client, message):
     user_id = message.from_user.id
     proses = await message.reply("<b>Processing...</b>")
-    if user_id not in navy._get_my_id:
+    if user_id not in alice._get_my_id:
         return await proses.edit(
             f"<b>You are not user @{bot.me.username}!!</b>", reply_markup=keyboard
         )
@@ -38,11 +38,11 @@ async def reset_costum_text(client, message):
 async def reset_emoji(client, message):
     user_id = message.from_user.id
     proses = await message.reply("<b>Processing...</b>")
-    if user_id not in navy._get_my_id:
+    if user_id not in alice._get_my_id:
         return await proses.edit(
             f"<b>You are not user @{bot.me.username}!!</b>", reply_markup=keyboard
         )
-    for User in navy._ubot:
+    for User in alice._ubot:
         if user_id == User.me.id:
             try:
                 em = Emoji(User)
@@ -61,11 +61,11 @@ async def reset_prefix(client, message):
     mepref = [".", ",", "?", "+", "!"]
     proses = await message.reply("<b>Processing...</b>")
     user_id = message.from_user.id
-    if user_id not in navy._get_my_id:
+    if user_id not in alice._get_my_id:
         return await proses.edit(
             f"<b>You are not user @{bot.me.username}!!</b>", reply_markup=keyboard
         )
-    for x in navy._ubot:
+    for x in alice._ubot:
         if x.me.id == user_id:
             x.set_prefix(x.me.id, mepref)
             await dB.set_pref(x.me.id, mepref)
@@ -87,7 +87,7 @@ async def restart_userbot(client, message):
         )
     try:
         ubot = UserBot(**get_id)
-        navy._get_my_id.remove(user_id)
+        alice._get_my_id.remove(user_id)
         await ubot.start()
         for modul in PLUGINS:
             importlib.reload(importlib.import_module(f"plugins.{modul}"))

@@ -10,7 +10,7 @@ from pyrogram import enums
 from pyrogram.helpers import kb
 from pytz import timezone
 
-from clients import bot, navy
+from clients import bot, alice
 from config import (AKSES_DEPLOY, BOT_ID, BOT_NAME, LOG_BACKUP, LOG_SELLER,
                     OWNER_ID)
 from database import DB_PATH, dB
@@ -80,7 +80,7 @@ async def installing_user(client):
 
 async def installPeer():
     try:
-        for client in navy._ubot:
+        for client in alice._ubot:
             await installing_user(client)
     except Exception as er:
         await bot.send_message(
@@ -108,7 +108,7 @@ async def CheckUsers():
     while True:
         total = await dB.get_var(BOT_ID, "total_users")
         try:
-            if len(navy._ubot) != total:
+            if len(alice._ubot) != total:
                 now = datetime.now(timezone("Asia/Jakarta"))
                 timestamp = now.strftime("%Y-%m-%d_%H:%M")
                 zip_filename = f"{BOT_NAME}_{timestamp}.zip"
@@ -134,7 +134,7 @@ async def CheckUsers():
 
 async def ExpiredUser():
     while True:
-        for client in navy._ubot:
+        for client in alice._ubot:
             tokenref = await TokenReferal.create()
             try:
                 now = datetime.now(timezone("Asia/Jakarta"))
@@ -156,8 +156,8 @@ async def ExpiredUser():
                     await dB.remove_ubot(client.me.id)
                     await dB.rem_expired_date(client.me.id)
                     await tokenref.delete_user_data(client.me.id)
-                    navy._get_my_id.remove(client.me.id)
-                    navy._ubot.remove(client)
+                    alice._get_my_id.remove(client.me.id)
+                    alice._ubot.remove(client)
                     await client.log_out()
             except Exception:
                 logger.error(f"Expired error {client.me.id}: {traceback.format_exc()}")
@@ -181,12 +181,12 @@ async def CleanAcces():
 
 
 async def stoped_ubot(userid):
-    for client in navy._ubot:
+    for client in alice._ubot:
         if client.me.id == userid:
             await dB.remove_ubot(client.me.id)
             await dB.rem_expired_date(client.me.id)
-            navy._get_my_id.remove(client.me.id)
-            navy._ubot.remove(client)
+            alice._get_my_id.remove(client.me.id)
+            alice._ubot.remove(client)
             await client.stop()
             await client.log_out()
             break

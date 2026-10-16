@@ -4,7 +4,7 @@ import traceback
 
 from pyrogram.errors import FloodWait, UserBannedInChannel
 
-from clients import navy
+from clients import alice
 from config import BLACKLIST_GCAST
 from database import dB
 from logs import logger
@@ -93,7 +93,7 @@ async def autofw_broadcast(client):
 
 
 async def AutoFW():
-    for userbot in navy._ubot:
+    for userbot in alice._ubot:
         try:
             asyncio.create_task(autofw_broadcast(userbot))
         except Exception as e:

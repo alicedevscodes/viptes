@@ -8,7 +8,7 @@ from pyrogram.raw.functions import Ping
 from pyrogram.types import ReplyKeyboardRemove
 from pytz import timezone
 
-from clients import navy
+from clients import alice
 from config import BOT_NAME, SUDO_OWNERS
 from database import dB
 from helpers import Emoji, TokenReferal, get_time, start_time
@@ -100,7 +100,7 @@ async def cek_status_akun(client, message):
     tokenref = await TokenReferal.create()
     user_id = message.from_user.id
     seles = await dB.get_list_from_var(client.me.id, "SELLER")
-    if user_id not in navy._get_my_id:
+    if user_id not in alice._get_my_id:
         status2 = "tidak aktif"
     else:
         status2 = "aktif"

@@ -2,7 +2,7 @@ from typing import Optional
 
 from pytz import timezone
 
-from clients import navy
+from clients import alice
 from config import BOT_ID, BOT_NAME, USENAME_OWNER
 from database import dB
 
@@ -84,14 +84,14 @@ Sistem pembayaran melalui QRIS Oromatis.</b></blockquote>"""
 
     @staticmethod
     async def userbot(count):
-        expired_date = await dB.get_expired_date(navy._ubot[int(count)].me.id)
+        expired_date = await dB.get_expired_date(alice._ubot[int(count)].me.id)
         expir = expired_date.astimezone(timezone("Asia/Jakarta")).strftime(
             "%Y-%m-%d %H:%M"
         )
         return f"""
-<b>❏ Userbot ke </b> <code>{int(count) + 1}/{len(navy._ubot)}</code>
-<b> ├ Akun:</b> <a href=tg://user?id={navy._ubot[int(count)].me.id}>{navy._ubot[int(count)].me.first_name} {navy._ubot[int(count)].me.last_name or ''}</a> 
-<b> ├ ID:</b> <code>{navy._ubot[int(count)].me.id}</code>
+<b>❏ Userbot ke </b> <code>{int(count) + 1}/{len(alice._ubot)}</code>
+<b> ├ Akun:</b> <a href=tg://user?id={alice._ubot[int(count)].me.id}>{alice._ubot[int(count)].me.first_name} {alice._ubot[int(count)].me.last_name or ''}</a> 
+<b> ├ ID:</b> <code>{alice._ubot[int(count)].me.id}</code>
 <b> ╰ Expired</b> <code>{expir}</code>
 """
 

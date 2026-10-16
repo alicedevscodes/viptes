@@ -24,7 +24,7 @@ from pyrogram.types import (InlineKeyboardMarkup, InputMediaAnimation,
 from pyrogram.utils import unpack_inline_message_id
 from pytz import timezone
 
-from clients import bot, navy
+from clients import bot, alice
 from config import (API_BOTCHAX, API_MAELYN, BOT_NAME, COPY_ID, HELPABLE,
                     LOG_SELLER, SUDO_OWNERS, OWNER_ID, USENAME_OWNER)
 from database import dB, state
@@ -221,7 +221,7 @@ async def jawab_pesan(client, callback_query):
     try:
         pesan = await bot.ask(
             chat_id,
-            f"<b>✉️ {full_name}, balas (reply) pesan ini.</b>",
+            f"<b>✉️ {full_name}, balas (reply) pesan ini dengan jawabanmu untuk buyer.</b>",
             filters=filters.user(admin.id),
             reply_markup=_tombol_batal("admin", admin.id),
             reply_to_message_id=log_msg_id,
@@ -393,7 +393,7 @@ async def cb_help(client, callback_query):
     visible_helpable = {
         name: data for name, data in HELPABLE.items() if is_pro or not data["is_pro"]
     }
-    prefix = navy.get_prefix(user_id)
+    prefix = alice.get_prefix(user_id)
     x_ = next(iter(prefix))
     full = f"<a href=tg://user?id={callback_query.from_user.id}>{callback_query.from_user.first_name} {callback_query.from_user.last_name or ''}</a>"
     cekpic = await dB.get_var(user_id, "HELP_LOGO")
@@ -552,14 +552,14 @@ async def del_userbot(client, callback_query):
     except Exception:
         get_id = int(callback_query.data.split()[1])
         get_mention = f"<a href=tg://user?id={get_id}>Userbot</a>"
-    for X in navy._ubot:
+    for X in alice._ubot:
         if get_id == X.me.id:
             await X.unblock_user(bot.me.username)
             await dB.remove_ubot(X.me.id)
             await dB.rem_expired_date(X.me.id)
             await tokenref.delete_user_data(str(X.me.id))
-            navy._get_my_id.remove(X.me.id)
-            navy._ubot.remove(X)
+            alice._get_my_id.remove(X.me.id)
+            alice._ubot.remove(X)
             await X.log_out()
             await bot.send_message(
                 LOG_SELLER,
@@ -576,19 +576,19 @@ async def prevnext_userbot(client, callback_query):
     query = callback_query.data.split()
     count = int(query[1])
     if query[0] == "next_ub":
-        if count == len(navy._ubot) - 1:
+        if count == len(alice._ubot) - 1:
             count = 0
         else:
             count += 1
     elif query[0] == "prev_ub":
         if count == 0:
-            count = len(navy._ubot) - 1
+            count = len(alice._ubot) - 1
         else:
             count -= 1
     try:
         return await callback_query.edit_message_text(
             await Message.userbot(count),
-            reply_markup=(ButtonUtils.userbot(navy._ubot[count].me.id, count)),
+            reply_markup=(ButtonUtils.userbot(alice._ubot[count].me.id, count)),
         )
     except Exception as e:
         return f"Error: {e}"
@@ -599,19 +599,19 @@ async def prevnext_userbot2(client, callback_query):
     query = callback_query.data.split()
     count = int(query[1])
     if query[0] == "fakenext_ub":
-        if count == len(navy._ubot) - 1:
+        if count == len(alice._ubot) - 1:
             count = 0
         else:
             count += 1
     elif query[0] == "fakeprev_ub":
         if count == 0:
-            count = len(navy._ubot) - 1
+            count = len(alice._ubot) - 1
         else:
             count -= 1
     try:
         return await callback_query.edit_message_text(
             await Message.userbot(count),
-            reply_markup=(ButtonUtils.fake_userbot(navy._ubot[count].me.id, count)),
+            reply_markup=(ButtonUtils.fake_userbot(alice._ubot[count].me.id, count)),
         )
     except Exception as e:
         return f"Error: {e}"
@@ -626,7 +626,7 @@ async def tools_userbot(client, callback_query):
             f"<b>GAUSAH REWEL YA ANJING! {callback_query.from_user.first_name} {callback_query.from_user.last_name or ''}",
             True,
         )
-    X = navy._ubot[int(query[1])]
+    X = alice._ubot[int(query[1])]
     if query[0] == "get_otp":
         async for otp in X.search_messages(777000, limit=1):
             try:
@@ -664,7 +664,7 @@ async def tools_userbot(client, callback_query):
             reply_markup=(ButtonUtils.deak(X.me.id, int(query[1])))
         )
     elif query[0] == "deak_akun":
-        navy._ubot.remove(X)
+        alice._ubot.remove(X)
         await X.invoke(raw.functions.account.DeleteAccount(reason="madarchod hu me"))
         return await callback_query.edit_message_text(
             Message.deak(X),
@@ -755,7 +755,7 @@ async def cb_notes(client, callback_query):
     try:
         notetag = data[-2].replace("cb_", "")
         gw = data[-1]
-        item = [x for x in navy._ubot if int(gw) == x.me.id]
+        item = [x for x in alice._ubot if int(gw) == x.me.id]
         noteval = await dB.get_var(int(gw), notetag, "notes")
 
         if not noteval:

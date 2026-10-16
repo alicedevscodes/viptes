@@ -20,7 +20,7 @@ from pyrogram.errors import (AuthKeyDuplicated, AuthKeyUnregistered,
                              UserDeactivated, UserDeactivatedBan)
 from pytz import timezone
 
-from clients import UserBot, bot, navy
+from clients import UserBot, bot, alice
 from config import BOT_ID, LOG_SELLER, OWNER_ID, WAJIB_JOIN
 from database import dB
 from helpers import (AutoBC, AutoFW, CheckUsers, CleanAcces, ExpiredUser,
@@ -226,7 +226,7 @@ async def start_main_bot():
     await bot.start()
     await bot.add_reseller()
     logger.info("✅ Main bot started successfully.")
-    total_bots = len(navy._ubot)
+    total_bots = len(alice._ubot)
     message = "🔥**Bot berhasil diaktifkan**🔥\n" f"✅ **Total User: {total_bots}**"
     await dB.set_var(bot.id, "total_users", total_bots)
     try:

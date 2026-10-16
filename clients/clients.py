@@ -712,5 +712,5 @@ class Bot(BaseClient):
         logger.info(f"🔥 {self.username} Bot VIP Started 🔥")
 
 
-navy = UserBot(name="Clients", plugins=dict(root="plugins"))
+alice = UserBot(name="Clients", plugins=dict(root="plugins"))
 bot = Bot()
