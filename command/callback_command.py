@@ -254,9 +254,9 @@ async def jawab_pesan(client, callback_query):
                 ]
             )
         await pesan.copy(target_id, reply_markup=buttons)
-        return await kirim_rich(user_id, "sukses", f"Pesan Balasan Terkirim : {full_name}")
+        return await kirim_rich(user_id, LOG_SELLER, "sukses", f"Pesan Balasan Terkirim : {full_name}")
     except asyncio.TimeoutError:
-        return await kirim_rich(user_id, "info", "Sesi berakhir, silakan coba lagi.")
+        return await kirim_rich(user_id, LOG_SELLER, "info", "Sesi berakhir, silakan coba lagi.")
     except Exception as error:
         if user_id not in SUPPORT:
             return
