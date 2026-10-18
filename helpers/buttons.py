@@ -413,11 +413,11 @@ class ButtonUtils:
             [
                 [
                     (
-                      ((" Seblak Pedas"), 
+                      ((" VIP"), 
                      f"planusers basic", ButtonStyle.DANGER, "5458908492687497206")
                     ), 
                     (
-                      ((" Seblak Non Pedas"),
+                      ((" Userbot"),
                      f"planusers is_pro", ButtonStyle.PRIMARY, "5258397811329739167")
                     ),
                 ],
