@@ -30,6 +30,9 @@ meval
 aiorun
 telegraph
 aiosqlite
+aioshutil
+python_socks
+hydrogram
 git+https://github.com/alicedevscodes/devgram@rich
 speechrecognition
 browser-cookie-3x
