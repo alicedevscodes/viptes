@@ -194,15 +194,9 @@ async def handle_start_error():
 
 async def start_ubot(ubot):
     """Start a userbot instance and handle setup."""
-    from command import register_antiucast  # import di dalam fungsi, hindari circular import
-
     userbot = UserBot(**ubot)
     try:
         await userbot.start()
-        try:
-            register_antiucast(userbot)
-        except Exception:
-            logger.error(f"Antiucast gagal didaftarkan: {traceback.format_exc()}")
         for chat in WAJIB_JOIN:
             try:
                 await userbot.join_chat(chat)
