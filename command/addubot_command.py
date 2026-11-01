@@ -15,7 +15,7 @@ from config import (
     LOG_SELLER, MAX_BOT, SUDO_OWNERS, WAJIB_JOIN,
 )
 from database import dB, state
-from helpers import TokenReferal, no_trigger
+from helpers import ButtonUtils, TokenReferal, no_trigger
 from logs import logger
 from plugins import PLUGINS
 
@@ -36,7 +36,6 @@ def _cancelled(message):
     text = getattr(message, "text", None)
     if not isinstance(text, str) or not text.strip():
         return False
-
     return text.strip().casefold() in {
         "/cancel", "cancel", "/batal", "batal", "❌ batalkan",
     }
@@ -57,44 +56,46 @@ async def setExpiredUser(user_id):
     await dB.set_expired_date(user_id, expired)
 
 
+async def buyer_menu(client, message):
+    text = (
+        "<b>🛒 Menu Pembelian</b>\n\n"
+        "Silakan pilih produk yang ingin dibeli.\n"
+        "Pembelian produk tidak memerlukan setup akun Telegram."
+    )
+    sent = await client.send_message(
+        message.chat.id, text, reply_markup=ReplyKeyboardRemove(),
+    )
+    return await sent.edit_text(text, reply_markup=ButtonUtils.chose_plan())
+
+
 async def mari_buat_userbot(client, message):
     user_id = message.from_user.id
+    if not await dB.get_var(user_id, "nokos_setup_enabled"):
+        return await buyer_menu(client, message)
     if user_id in _SETUP_PENDING:
         return await message.reply(
             "Setup akun ini sedang berjalan. Selesaikan atau batalkan proses sebelumnya."
         )
-
     if any(app.me.id == user_id for app in alice._ubot):
         return await message.reply(
-            "<b>Sesi akun sudah terhubung.</b>\n"
-            "Owner dapat melanjutkan pengikatan nomor melalui "
-            "<code>/bindnokos NOMOR USER_ID</code>."
+            "<b>Sesi akun stok sudah terhubung.</b>\n"
+            "Owner dapat melanjutkan pengikatan nomor melalui:\n"
+            "<code>/bindnokos NOMOR USER_ID</code>",
+            reply_markup=ReplyKeyboardRemove(),
         )
-
     if len(alice._ubot) >= MAX_BOT:
         return await message.reply(
             "<b>Kapasitas akun terhubung sedang penuh.</b>\n"
             "Hubungi owner sebelum menambahkan akun stok berikutnya.",
             reply_markup=ReplyKeyboardRemove(),
         )
-
     expired = await dB.get_expired_date(user_id)
-    if expired and datetime.now(_TZ) >= expired:
+    if not expired or datetime.now(_TZ) >= expired:
         return await message.reply(
-            "<b>Akses setup database OTP nokos sudah berakhir.</b>\n"
-            "Hubungi owner untuk mengaktifkan kembali akses akun ini.",
+            "<b>Akses setup database OTP nokos belum aktif atau sudah berakhir.</b>\n"
+            "Minta owner mengaktifkan kembali akun stok ini.",
             reply_markup=ReplyKeyboardRemove(),
         )
-
-    if not expired and user_id not in AKSES_DEPLOY:
-        return await message.reply(
-            "<b>Akses setup database OTP nokos belum aktif.</b>\n\n"
-            f"ID akun: <code>{user_id}</code>\n"
-            "Minta owner mengaktifkan akun ini melalui:\n"
-            f"<code>/aktif {user_id}</code>",
-            reply_markup=ReplyKeyboardRemove(),
-        )
-
     _SETUP_PENDING.add(user_id)
     try:
         return await create_userbots(client, message)
