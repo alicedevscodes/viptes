@@ -3,11 +3,15 @@ from datetime import datetime
 
 from pyrogram import StopPropagation, filters
 from pyrogram.enums import ParseMode
-from pyrogram.helpers import kb
 from pytz import timezone
 
 from clients import bot
-from command.addubot_command import setExpiredUser
+from command.addubot_command import (
+    SETUP_OTP_BUTTON,
+    mari_buat_userbot,
+    setExpiredUser,
+    setup_otp_keyboard,
+)
 from config import AKSES_DEPLOY, OWNER_ID
 from database import dB
 
@@ -44,36 +48,45 @@ async def aktif_handler(client, message):
                 AKSES_DEPLOY.append(user_id)
 
         batas = expired.astimezone(_TZ).strftime("%d-%m-%Y %H:%M WIB")
-        notification_sent = True
+        notified = True
         try:
             await client.send_message(
                 user_id,
-                "<b>Akses userbot sudah diaktifkan.</b>\n\n"
-                f"ID: <code>{user_id}</code>\n"
-                "Plan: <b>Pro</b>\n"
+                "<b>✅ Akses database OTP nokos telah diaktifkan.</b>\n\n"
+                f"ID akun: <code>{user_id}</code>\n"
                 f"Berlaku sampai: <code>{batas}</code>\n\n"
-                "Tekan tombol di bawah untuk melanjutkan login akunmu.",
+                "Silakan lanjutkan setup untuk menambahkan akun stok milikmu.\n"
+                "Tahap berikutnya melakukan login Telegram dan menautkan "
+                "sesi akun ke sistem.",
                 parse_mode=ParseMode.HTML,
-                reply_markup=kb(
-                    [["✅ Lanjutkan Buat Userbot"]],
-                    resize_keyboard=True,
-                    one_time_keyboard=True,
-                ),
+                reply_markup=setup_otp_keyboard(),
             )
         except Exception:
-            notification_sent = False
+            notified = False
 
         text = (
-            "<b>Akses userbot berhasil diberikan.</b>\n\n"
+            "<b>✅ Akses database OTP nokos berhasil diaktifkan.</b>\n\n"
             f"ID akun: <code>{user_id}</code>\n"
-            "Plan: <b>Pro</b>\n"
-            f"Berlaku sampai: <code>{batas}</code>"
+            f"Berlaku sampai: <code>{batas}</code>\n\n"
+            "Akun dapat melanjutkan setup melalui bot."
         )
-        if not notification_sent:
+        if not notified:
             text += (
-                "\n\nNotifikasi belum berhasil dikirim. "
-                "Akses tetap tersimpan; buka /start dari akun tersebut."
+                "\nNotifikasi belum terkirim. Akses tetap tersimpan; "
+                "buka /start dari akun tersebut dahulu."
             )
         await message.reply(text, parse_mode=ParseMode.HTML)
+    finally:
+        raise StopPropagation
+
+
+@bot.on_message(
+    filters.private & ~filters.bot
+    & filters.regex(r"^📲 Lanjutkan Setup OTP Nokos$"),
+    group=-29,
+)
+async def lanjut_setup_otp(client, message):
+    try:
+        await mari_buat_userbot(client, message)
     finally:
         raise StopPropagation
