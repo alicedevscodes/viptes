@@ -106,11 +106,14 @@ Sistem pembayaran melalui QRIS Oromatis.</b></blockquote>"""
 
     @staticmethod
     async def policy_message() -> str:
-        """Generate enhanced policy and terms message"""
-        return f"""<b>🧾INI CONTOH BOT AUTO PAY!</b>
-💎  Seblak Premium adalah bla bla bla anu mencret loe pada
-Ini contoh ya njing.
-"""
+        return (
+            "<b>📦 Layanan Produk Digital</b>\n\n"
+            "Pilih produk yang tersedia melalui menu bot.\n"
+            "Ikuti instruksi pembayaran dan kirim foto bukti pada pesanan aktif.\n\n"
+            "Untuk persiapan database OTP nokos, akses akun diaktifkan "
+            "oleh owner. Penautan akun memerlukan login Telegram "
+            "menggunakan akun stok milik sendiri."
+        )
 
     @staticmethod
     def format_rupiah(angka):
