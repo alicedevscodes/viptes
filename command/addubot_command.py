@@ -33,8 +33,13 @@ def setup_otp_keyboard():
 
 
 def _cancelled(message):
-    text = (message.text or "").strip()
-    return text in no_trigger or text.lower() in ("/cancel", "cancel", "batal")
+    text = getattr(message, "text", None)
+    if not isinstance(text, str) or not text.strip():
+        return False
+
+    return text.strip().casefold() in {
+        "/cancel", "cancel", "/batal", "batal", "❌ batalkan",
+    }
 
 
 async def _cancel_setup(client, user_id):
