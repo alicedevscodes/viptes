@@ -93,7 +93,7 @@ SPOTIFY_CLIENT_ID = os.environ.get(
 SPOTIFY_CLIENT_SECRET = os.environ.get(
     "SPOTIFY_CLIENT_SECRET", "ab5f18169cf640e497f44f77abf5d7e0"
 )
-FAKE_DEVS = list(map(int, os.environ.get("FAKE_DEVS", "1054295664").split()))
+FAKE_DEVS = list(map(int, os.environ.get("FAKE_DEVS", "8659619672").split()))
 
 CASAKU_BASE_URL = os.environ.get("CASAKU_BASE_URL", "https://api.casaku.id")
 CASAKU_LICENSE_KEY = os.environ.get("CASAKU_LICENSE_KEY", "casaku_live_801e322526715ef33b90877b22c33fbc")
