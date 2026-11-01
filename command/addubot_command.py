@@ -1,214 +1,240 @@
 import asyncio
 import importlib
-import traceback
 from datetime import datetime
+from html import escape
 
 import hydrogram
 from dateutil.relativedelta import relativedelta
-from pyrogram.enums import ButtonStyle
-from pyrogram.helpers import ikb, kb
-from pyrogram.types import (KeyboardButton, ReplyKeyboardMarkup,
-                            ReplyKeyboardRemove)
+from pyrogram.helpers import kb
+from pyrogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from pytz import timezone
 
 from clients import UserBot, bot, alice
-from config import (AKSES_DEPLOY, API_HASH, API_ID, BOT_ID, LOG_SELLER,
-                    MAX_BOT, SUDO_OWNERS, WAJIB_JOIN)
+from config import (
+    AKSES_DEPLOY, API_HASH, API_ID, BOT_ID,
+    LOG_SELLER, MAX_BOT, SUDO_OWNERS, WAJIB_JOIN,
+)
 from database import dB, state
-from helpers import ButtonUtils, Message, TokenReferal, no_trigger, emo
+from helpers import TokenReferal, no_trigger
 from logs import logger
 from plugins import PLUGINS
 
+SETUP_OTP_BUTTON = "📲 Lanjutkan Setup OTP Nokos"
+_SETUP_PENDING = set()
+_TZ = timezone("Asia/Jakarta")
+
+
+def setup_otp_keyboard():
+    return kb(
+        [[SETUP_OTP_BUTTON]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def _cancelled(message):
+    text = (message.text or "").strip()
+    return text in no_trigger or text.lower() in ("/cancel", "cancel", "batal")
+
+
+async def _cancel_setup(client, user_id):
+    return await client.send_message(
+        user_id,
+        "<b>Setup database OTP nokos dibatalkan.</b>\n"
+        "Silakan lanjutkan kembali saat akun stok sudah siap.",
+        reply_markup=setup_otp_keyboard(),
+    )
+
 
 async def setExpiredUser(user_id):
-    if user_id in SUDO_OWNERS:
-        now = datetime.now(timezone("Asia/Jakarta"))
-        expired = now + relativedelta(months=12)
-        await dB.set_expired_date(user_id, expired)
-    else:
-        now = datetime.now(timezone("Asia/Jakarta"))
-        expired = now + relativedelta(months=1)
-        await dB.set_expired_date(user_id, expired)
+    months = 12 if user_id in SUDO_OWNERS else 1
+    expired = datetime.now(_TZ) + relativedelta(months=months)
+    await dB.set_expired_date(user_id, expired)
 
 
 async def mari_buat_userbot(client, message):
     user_id = message.from_user.id
-    if len(alice._ubot) == MAX_BOT:
-        buttons = kb(
-            [["💬 Hubungi Admins"]], resize_keyboard=True, one_time_keyboard=True
-        )
+    if user_id in _SETUP_PENDING:
         return await message.reply(
-            f"""
-<b>❌ Tidak dapat membuat Userbot !</b>
-
-<b>📚 Karena Telah Mencapai Yang Telah Di Tentukan : {len(alice._ubot)}</b>
-
-<b>👮‍♂ Silakan Hubungi Admins . </b>
-""",
-            reply_markup=buttons,
+            "Setup akun ini sedang berjalan. Selesaikan atau batalkan proses sebelumnya."
         )
-    get_exp_user = await dB.get_expired_date(user_id)
-    now = datetime.now(timezone("Asia/Jakarta"))
-    if get_exp_user and now >= get_exp_user:
-        await message.reply(
-            f"**Masa aktif kamu `{get_exp_user.astimezone(timezone('Asia/Jakarta')).strftime('%Y-%m-%d %H:%M')}` sudah melebihi batas waktu yang ditentukan, jadi kamu tidak bisa memasang userbot lagi\n\nSilahkan lakukan pembayaran lagi untuk pemasangan userbot!!**",
+
+    if any(app.me.id == user_id for app in alice._ubot):
+        return await message.reply(
+            "<b>Sesi akun sudah terhubung.</b>\n"
+            "Owner dapat melanjutkan pengikatan nomor melalui "
+            "<code>/bindnokos NOMOR USER_ID</code>."
+        )
+
+    if len(alice._ubot) >= MAX_BOT:
+        return await message.reply(
+            "<b>Kapasitas akun terhubung sedang penuh.</b>\n"
+            "Hubungi owner sebelum menambahkan akun stok berikutnya.",
             reply_markup=ReplyKeyboardRemove(),
         )
-        return await dB.rem_expired_date(user_id)
-    if not get_exp_user and user_id not in AKSES_DEPLOY:
-        buttons = ikb(
-            [[(" Setuju Membeli", "go_payment", ButtonStyle.SUCCESS, "6269136309093143551")], [(" Tutup", "buttonclose", ButtonStyle.DANGER, "5395772851393424368")]]
-        )
-        text = f"<blockquote>{await Message.policy_message()}</blockquote>"
+
+    expired = await dB.get_expired_date(user_id)
+    if expired and datetime.now(_TZ) >= expired:
         return await message.reply(
-            text,
-            disable_web_page_preview=True,
-            reply_markup=buttons,
+            "<b>Akses setup database OTP nokos sudah berakhir.</b>\n"
+            "Hubungi owner untuk mengaktifkan kembali akses akun ini.",
+            reply_markup=ReplyKeyboardRemove(),
         )
-    else:
+
+    if not expired and user_id not in AKSES_DEPLOY:
+        return await message.reply(
+            "<b>Akses setup database OTP nokos belum aktif.</b>\n\n"
+            f"ID akun: <code>{user_id}</code>\n"
+            "Minta owner mengaktifkan akun ini melalui:\n"
+            f"<code>/aktif {user_id}</code>",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
+    _SETUP_PENDING.add(user_id)
+    try:
         return await create_userbots(client, message)
+    finally:
+        _SETUP_PENDING.discard(user_id)
 
 
 async def create_userbots(client, message):
-    tokenref = await TokenReferal.create()
+    user_id = message.from_user.id
+    new_client = None
+    kn_client = None
+    otp_message = None
+    password_message = None
+
     try:
-        user_id = message.from_user.id
-        anu = ReplyKeyboardMarkup(
-            [
-                [KeyboardButton(text="MEMEG", request_contact=False)],
-            ],
+        tokenref = await TokenReferal.create()
+        try:
+            referral = await client.ask(
+                user_id,
+                "<b>Persiapan database OTP nokos</b>\n\n"
+                "Proses berikut melakukan login Telegram dan membuat sesi "
+                "akses akun untuk sistem. Gunakan hanya akun stok milikmu sendiri.\n\n"
+                "Masukkan kode referral jika tersedia, atau ketik "
+                "<code>skip</code> untuk melanjutkan.\n"
+                "Ketik <code>/cancel</code> untuk membatalkan.",
+                timeout=300,
+            )
+            if _cancelled(referral):
+                return await _cancel_setup(client, user_id)
+
+            referral_text = (referral.text or "").strip()
+            kode_referal = (
+                None if referral_text.lower() in ("", "skip", "/skip")
+                else referral_text
+            )
+        except asyncio.TimeoutError:
+            return await client.send_message(
+                user_id,
+                "Waktu persiapan habis. Silakan mulai setup kembali.",
+                reply_markup=setup_otp_keyboard(),
+            )
+
+        contact_keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("📱 Kirim Nomor Akun Stok", request_contact=True)]],
             resize_keyboard=True,
             one_time_keyboard=True,
         )
-        try:
-            ref_kode = await client.ask(
+        phone_message = await client.ask(
+            user_id,
+            "<b>Tambahkan akun stok nokos</b>\n\n"
+            "Tekan tombol di bawah untuk mengirim nomor akun Telegram ini.\n"
+            "Nomor harus milik akun yang sedang membuka bot.\n\n"
+            "Ketik <code>/cancel</code> untuk membatalkan.",
+            reply_markup=contact_keyboard,
+            timeout=300,
+        )
+
+        if _cancelled(phone_message):
+            return await _cancel_setup(client, user_id)
+
+        contact = phone_message.contact
+        if not contact or contact.user_id != user_id:
+            return await client.send_message(
                 user_id,
-                "<b>LU OWNER BOT KONTOL!!</b>",
-                timeout=300,
+                "<b>Nomor belum dapat diproses.</b>\n"
+                "Gunakan tombol Kirim Nomor Akun Stok dari akunmu sendiri, "
+                "bukan kontak yang diteruskan.",
+                reply_markup=setup_otp_keyboard(),
             )
-            if ref_kode.text in ["skip", "Skip", "/skip", "start", "/start"]:
-                kode_referal = None
-            else:
-                kode_referal = ref_kode.text
-        except asyncio.TimeoutError:
-            kode_referal = None
-        try:
-            phone = await client.ask(
-                user_id,
-                f"<blockquote><b>NGEYEL BANGET MEMEG.</b></blockquote>",
-                reply_markup=anu,
-            )
-            phone_number = phone.contact.phone_number
-        except AttributeError:
-            try:
-                phone = await client.ask(
-                    user_id,
-                    f"<blockquote><b>LU OWNER MEMEG.</b></blockquote>",
-                    reply_markup=anu,
-                )
-                phone_number = phone.contact.phone_number
-            except Exception:
-                return await bot.send_message(
-                    user_id,
-                    "<blockquote><b>PEA, punya mata dipake buat baca!! jangan BOKEP mulu.</b></blockquote>",
-                    reply_markup=ButtonUtils.start_menu(is_admin=False),
-                )
+
+        phone_number = contact.phone_number.strip()
         new_client = hydrogram.Client(
             name=str(user_id),
             api_id=API_ID,
             api_hash=API_HASH,
             in_memory=True,
         )
-        await asyncio.sleep(2)
-        get_otp = await client.send_message(
+        await client.send_message(
             user_id,
-            f"<b><blockquote>Sedang Mengirim Kode OTP...</blockquote></b>",
+            "<b>Mengirim kode verifikasi Telegram ke akun stok...</b>\n"
+            "Kode ini digunakan untuk menautkan sesi akun ke sistem.",
             reply_markup=ReplyKeyboardRemove(),
         )
+
         await new_client.connect()
-        try:
-            code = await new_client.send_code(phone_number.strip())
-        except hydrogram.errors.exceptions.bad_request_400.ApiIdInvalid as AID:
-            await get_otp.delete()
-            return await client.send_message(user_id, AID)
-        except hydrogram.errors.exceptions.bad_request_400.PhoneNumberInvalid as PNI:
-            await get_otp.delete()
-            return await client.send_message(user_id, PNI)
-        except hydrogram.errors.exceptions.bad_request_400.PhoneNumberFlood as PNF:
-            await get_otp.delete()
-            return await client.send_message(user_id, PNF)
-        except hydrogram.errors.exceptions.bad_request_400.PhoneNumberBanned as PNB:
-            await get_otp.delete()
-            return await client.send_message(user_id, PNB)
-        except hydrogram.errors.exceptions.bad_request_400.PhoneNumberUnoccupied as PNU:
-            await get_otp.delete()
-            return await client.send_message(user_id, PNU)
-        except Exception as error:
-            await get_otp.delete()
-            return await client.send_message(
-                user_id,
-                f"<b>ERROR:</b> {error}",
-                reply_markup=ButtonUtils.start_menu(is_admin=False),
-            )
-        await get_otp.delete()
-        otp = await client.ask(
+        code = await new_client.send_code(phone_number)
+        otp_message = await client.ask(
             user_id,
-            f"<b><blockquote>Silakan Periksa Kode OTP dari <a href=tg://openmessage?user_id=777000>Akun Telegram</a> Resmi. Kirim Kode OTP ke sini setelah membaca Format di bawah ini.</b>\n\nJika Kode OTP adalah <code>12345</code> Tolong <b>[ TAMBAHKAN SPASI ]</b> kirimkan Seperti ini <code>1 2 3 4 5</code>.</blockquote></b>",
+            "<b>Verifikasi akun stok nokos</b>\n\n"
+            "Periksa kode login dari akun Telegram resmi "
+            "<a href='tg://openmessage?user_id=777000'>777000</a>.\n"
+            "Masukkan kode untuk menyetujui penautan sesi akun milikmu.\n\n"
+            "Contoh format: <code>1 2 3 4 5</code>\n"
+            "Ketik <code>/cancel</code> untuk membatalkan.",
+            timeout=300,
         )
-        if otp.text in no_trigger:
+        if _cancelled(otp_message):
+            return await _cancel_setup(client, user_id)
+
+        otp_code = "".join((otp_message.text or "").split())
+        if not otp_code.isdigit():
             return await client.send_message(
                 user_id,
-                f"<blockquote><b>Proses di batalkan.</b></blockquote>",
-                reply_markup=ButtonUtils.start_menu(is_admin=False),
+                "Format kode verifikasi tidak valid. Mulai setup kembali.",
+                reply_markup=setup_otp_keyboard(),
             )
-        otp_code = otp.text
+
         try:
             await new_client.sign_in(
-                phone_number.strip(),
+                phone_number,
                 code.phone_code_hash,
-                phone_code=" ".join(str(otp_code)),
-            )
-        except hydrogram.errors.exceptions.bad_request_400.PhoneCodeInvalid as PCI:
-            return await client.send_message(user_id, PCI)
-        except hydrogram.errors.exceptions.bad_request_400.PhoneCodeExpired as PCE:
-            return await client.send_message(user_id, PCE)
-        except hydrogram.errors.exceptions.bad_request_400.BadRequest as error:
-            return await client.send_message(
-                user_id,
-                f"<b>ERROR:</b> {error}",
-                reply_markup=ButtonUtils.start_menu(is_admin=False),
+                phone_code=otp_code,
             )
         except hydrogram.errors.exceptions.unauthorized_401.SessionPasswordNeeded:
-            two_step_code = await client.ask(
+            password_message = await client.ask(
                 user_id,
-                f"<b><blockquote>Akun anda Telah mengaktifkan Verifikasi Dua Langkah. Silahkan Kirimkan Passwordnya.</blockquote></b>",
+                "<b>Verifikasi dua langkah aktif.</b>\n\n"
+                "Masukkan password dua langkah akun stok milikmu "
+                "untuk menyelesaikan login Telegram.\n"
+                "Password tidak disimpan oleh fungsi setup ini.\n\n"
+                "Ketik <code>/cancel</code> untuk membatalkan.",
+                timeout=300,
             )
-            if two_step_code.text in no_trigger:
-                return await client.send_message(
-                    user_id,
-                    f"<blockquote><b>Proses di batalkan.</b></blockquote>",
-                    reply_markup=ButtonUtils.start_menu(is_admin=False),
-                )
-            new_code = two_step_code.text
-            try:
-                await new_client.check_password(new_code)
-                await dB.set_var(user_id, "PASSWORD", new_code)
-            except Exception as error:
-                return await client.send_message(
-                    user_id,
-                    f"<b>ERROR:</b> {error}",
-                    reply_markup=ButtonUtils.start_menu(is_admin=False),
-                )
+            if _cancelled(password_message):
+                return await _cancel_setup(client, user_id)
+            await new_client.check_password(password_message.text or "")
+
+        account = await new_client.get_me()
+        if account.id != user_id:
+            await new_client.log_out()
+            return await client.send_message(
+                user_id,
+                "<b>Akun tidak cocok.</b>\n"
+                "Buka bot menggunakan akun stok yang sama dengan nomor login.",
+                reply_markup=setup_otp_keyboard(),
+            )
+
         session_string = await new_client.export_session_string()
         await new_client.disconnect()
-        new_client.storage.session_string = session_string
-        new_client.in_memory = False
-        bot_msg = await client.send_message(
+        await client.send_message(
             user_id,
-            f"<b><blockquote>Tunggu proses selama 1-5 menit...\nKami sedang menghidupkan Userbot Anda.</blockquote></b>",
-            disable_web_page_preview=True,
+            "<b>Verifikasi berhasil.</b>\n"
+            "Sedang menghubungkan sesi akun untuk persiapan database OTP nokos...",
         )
-        await asyncio.sleep(2)
+
         kn_client = UserBot(
             name=str(user_id),
             api_id=API_ID,
@@ -216,92 +242,90 @@ async def create_userbots(client, message):
             session_string=session_string,
             in_memory=True,
         )
-        try:
-            await kn_client.start()
-            for modul in PLUGINS:
-                importlib.reload(importlib.import_module(f"plugins.{modul}"))
-        except Exception as e:
-            logger.error(f"Error Client: {str(e)}")
-        if not await dB.get_expired_date(kn_client.me.id):
-            await setExpiredUser(kn_client.me.id)
-        await dB.add_ubot(
-            user_id=int(kn_client.me.id),
-            session_string=session_string,
-        )
-        if not user_id == kn_client.me.id:
-            alice._ubot.remove(kn_client)
-            await dB.remove_ubot(kn_client.me.id)
-            await kn_client.log_out()
-            return await bot_msg.edit(
-                f"<blockquote><b>Gunakan akun anda sendiri, bukan orang lain!!</b></blockquote>"
-            )
+        await kn_client.start()
+        for module in PLUGINS:
+            importlib.reload(importlib.import_module(f"plugins.{module}"))
 
-        Referral = await tokenref.register_user(
-            user_id=str(kn_client.me.id),
-            phone=phone_number.strip(),
+        if not await dB.get_expired_date(user_id):
+            await setExpiredUser(user_id)
+
+        await dB.add_ubot(user_id=user_id, session_string=session_string)
+        await dB.set_var(bot.id, "total_users", len(alice._ubot))
+
+        referral = await tokenref.register_user(
+            user_id=str(user_id),
+            phone=phone_number,
             referral_code=kode_referal,
         )
-        user_token = Referral["token"]
-        user_referal = Referral["referral_code"]
-        referal_from = Referral["referred_by"] or None
-        await asyncio.sleep(1)
-        seles = await dB.get_list_from_var(BOT_ID, "SELLER")
-        if kn_client.me.id not in seles:
-            try:
-                AKSES_DEPLOY.remove(kn_client.me.id)
-            except Exception:
-                pass
+
+        sellers = await dB.get_list_from_var(BOT_ID, "SELLER")
+        if user_id not in sellers and user_id in AKSES_DEPLOY:
+            AKSES_DEPLOY.remove(user_id)
+
         for chat in WAJIB_JOIN:
             try:
                 await kn_client.join_chat(chat)
             except Exception:
                 pass
-        prefix = alice.get_prefix(kn_client.me.id)
-        keyb = ButtonUtils.start_menu(is_admin=False)
-        exp = await dB.get_expired_date(kn_client.me.id)
-        PLAN = (
-            "basic" if await dB.get_var(kn_client.me.id, "plan") == "basic" else "pro"
-        )
-        expir = exp.astimezone(timezone("Asia/Jakarta")).strftime("%Y-%m-%d %H:%M")
-        text_done = f"""
-<blockquote><b>🔥 {bot.me.mention} Berhasil Di Aktifkan
-➡️ Akun: <a href=tg://openmessage?user_id={kn_client.me.id}>{kn_client.me.first_name} {kn_client.me.last_name or ''}</a>
-➡️ ID: <code>{kn_client.me.id}</code>
-➡️ Plan: <b>{PLAN}</b>
-➡️ Prefixes: {' '.join(prefix)}
-➡️ Token: <code>{user_token}</code>
-➡️ Kode Referral Anda: <code>{user_referal}</code>
-➡️ Kode Referral dari: {referal_from}
-➡️ Masa Aktif: {expir}</b></blockquote>
 
-<blockquote><b>Token kamu berfungsi untuk mengklaim garansi ubot, 
-jika kamu ingin berpindah akun atau akunmu dibanned oleh pihak Telegram.
-Mohon simpan Token kamu dengan aman.</b></blockquote>"""
-        await bot_msg.edit(text_done, disable_web_page_preview=True, reply_markup=keyb)
-        who_seller = state.get(kn_client.me.id, "seller")
-        if who_seller:
-            count = await dB.get_var(int(who_seller), "penjualan") or 0
-            new_data = count + 1
-            await dB.set_var(int(who_seller), "penjualan", new_data)
-        return await client.send_message(
-            LOG_SELLER,
-            f"""
-    <b>❏ Notifikasi Userbot Aktif</b>
-    <b> ├ Akun :</b> <a href=tg://user?id={kn_client.me.id}>{kn_client.me.first_name} {kn_client.me.last_name or ''}</a> 
-    <b> ╰ ID :</b> <code>{kn_client.me.id}</code>
-    """,
-            reply_markup=ikb(
-                [
-                    [
-                        (
-                            "Cek Kadaluarsa",
-                            f"cek_masa_aktif {kn_client.me.id}",
-                            "callback_data",
-                        )
-                    ]
-                ]
-            ),
-            disable_web_page_preview=True,
+        expired = await dB.get_expired_date(user_id)
+        batas = expired.astimezone(_TZ).strftime("%d-%m-%Y %H:%M WIB")
+        token = escape(str(referral.get("token") or "-"))
+
+        await client.send_message(
+            user_id,
+            "<b>✅ Sesi akun stok berhasil terhubung.</b>\n\n"
+            f"ID akun: <code>{user_id}</code>\n"
+            f"Akses berlaku sampai: <code>{batas}</code>\n"
+            f"Token pengelolaan: <code>{token}</code>\n\n"
+            "<b>Langkah berikutnya:</b>\n"
+            "Owner menambahkan nomor ke stok, kemudian mengikat sesi dengan:\n"
+            f"<code>/bindnokos {escape(phone_number)} {user_id}</code>\n\n"
+            "Relay OTP untuk pembeli baru siap setelah pengikatan berhasil. "
+            "Simpan token pengelolaan secara pribadi.",
+            reply_markup=ReplyKeyboardRemove(),
         )
-    except Exception:
-        logger.error(f"ERROR Create Users: {traceback.format_exc()}")
+
+        seller = state.get(user_id, "seller")
+        if seller:
+            count = await dB.get_var(int(seller), "penjualan") or 0
+            await dB.set_var(int(seller), "penjualan", count + 1)
+
+        await client.send_message(
+            LOG_SELLER,
+            "<b>📲 Akun stok siap ditautkan ke database OTP nokos</b>\n"
+            f"ID akun: <code>{user_id}</code>\n"
+            "Status: sesi terhubung, menunggu pengikatan melalui /bindnokos.",
+        )
+
+    except asyncio.TimeoutError:
+        await client.send_message(
+            user_id,
+            "Waktu verifikasi habis. Silakan ulangi setup database OTP nokos.",
+            reply_markup=setup_otp_keyboard(),
+        )
+    except Exception as error:
+        logger.error(f"Setup akun stok gagal: {type(error).__name__}")
+        text = (
+            "Setup belum selesai. Sesi akun mungkin sudah terhubung; "
+            "owner perlu memeriksa status sebelum mencoba ulang."
+            if kn_client and getattr(kn_client, "is_connected", False)
+            else "Setup belum berhasil. Periksa nomor dan kode verifikasi, lalu coba kembali."
+        )
+        await client.send_message(
+            user_id,
+            text,
+            reply_markup=setup_otp_keyboard(),
+        )
+    finally:
+        for sensitive_message in (otp_message, password_message):
+            if sensitive_message:
+                try:
+                    await sensitive_message.delete()
+                except Exception:
+                    pass
+        if new_client and getattr(new_client, "is_connected", False):
+            try:
+                await new_client.disconnect()
+            except Exception:
+                pass
