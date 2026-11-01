@@ -6,6 +6,7 @@ from html import escape
 import hydrogram
 from dateutil.relativedelta import relativedelta
 from pyrogram.helpers import kb
+from pyrogram.enums import ParseMode
 from pyrogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from pytz import timezone
 
@@ -59,13 +60,34 @@ async def setExpiredUser(user_id):
 async def buyer_menu(client, message):
     text = (
         "<b>🛒 Menu Pembelian</b>\n\n"
-        "Silakan pilih produk yang ingin dibeli.\n"
-        "Pembelian produk tidak memerlukan setup akun Telegram."
+        "Silakan pilih produk yang ingin dibeli."
     )
-    sent = await client.send_message(
-        message.chat.id, text, reply_markup=ReplyKeyboardRemove(),
-    )
-    return await sent.edit_text(text, reply_markup=ButtonUtils.chose_plan())
+    loading = None
+    stage = "membuat keyboard katalog"
+    try:
+        markup = ButtonUtils.chose_plan()
+        stage = "menghapus keyboard lama"
+        loading = await client.send_message(
+            message.chat.id,
+            "Membuka menu pembelian...",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        stage = "mengirim katalog beserta tombol"
+        return await client.send_message(
+            message.chat.id,
+            text,
+            parse_mode=ParseMode.HTML,
+            reply_markup=markup,
+        )
+    except Exception:
+        logger.exception("buyer_menu gagal pada tahap: %s", stage)
+        raise
+    finally:
+        if loading:
+            try:
+                await loading.delete()
+            except Exception:
+                pass
 
 
 async def mari_buat_userbot(client, message):
