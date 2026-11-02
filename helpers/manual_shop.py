@@ -12,11 +12,12 @@ from pyrogram.file_id import FileType
 from pyrogram.helpers import ikb
 from pyrogram.enums import ButtonStyle
 from pyrogram.utils import get_input_media_from_file_id
-from clients import bot
+from clients import bot, alice
 from config import API_ID, API_HASH, CODEQR, LOG_SELLER, OWNER_ID
 from database import dB
 from command import payment_command as pay
 from command import pay_peller as extra
+from logs import logger
 
 LOCK = asyncio.Lock()
 TESTIMONI_ID = LOG_SELLER
@@ -68,10 +69,80 @@ async def inventory(kind, key):
     return await extra.nf_list() if kind == "nf" else await pay.get_nokos_list(key)
 
 
+async def _nokos_client(number):
+    number = phone(number)
+    book = await load()
+    binding = book["sessions"].get(number) or {}
+    app = _APPS.get(number)
+    if app and not getattr(app, "is_connected", False):
+        _APPS.pop(number, None)
+        app = None
+    if app is None:
+        if not binding.get("session"):
+            raise ValueError("Sesi nomor stok belum tersedia.")
+        app = Client(
+            f"nokos-{number}", api_id=API_ID, api_hash=API_HASH,
+            session_string=binding["session"], in_memory=True,
+        )
+        try:
+            await app.connect()
+            me = await app.get_me()
+            if phone(me.phone_number) != number:
+                raise ValueError("Nomor sesi tidak cocok dengan stok.")
+        except BaseException:
+            if getattr(app, "is_connected", False):
+                await app.disconnect()
+            raise
+        _APPS[number] = app
+    return app
+
+
+async def _ready_nokos(number):
+    number = phone(number)
+    book = await load()
+    binding = book["sessions"].get(number) or {}
+    app = next((a for a in list(alice._ubot)
+                if getattr(a, "me", None)
+                and phone(getattr(a.me, "phone_number", "")) == number
+                and getattr(a, "is_connected", False)), None)
+    if app:
+        allowed = await dB.get_var(app.me.id, "nokos_setup_enabled")
+        if not allowed and not binding.get("session"):
+            raise ValueError("Sesi ini belum diberi izin sebagai akun stok.")
+        me = await app.get_me()
+        if phone(me.phone_number) != number:
+            raise ValueError("Nomor sesi tidak cocok dengan stok.")
+        latest = [m.id async for m in app.get_chat_history(777000, limit=1)]
+        book["sessions"][number] = {
+            "session": await app.export_session_string(),
+            "baseline": latest[0] if latest else 0,
+            "account_id": me.id,
+            "ready": False,
+        }
+        await save()
+        await dB.remove_ubot(me.id)
+        await app.stop()
+        if app in alice._ubot:
+            alice._ubot.remove(app)
+        if me.id in alice._get_my_id:
+            alice._get_my_id.remove(me.id)
+        await dB.set_var(bot.id, "total_users", len(alice._ubot))
+    elif not binding.get("session"):
+        raise ValueError("Nomor stok belum mempunyai sesi login aktif.")
+    app = await _nokos_client(number)
+    binding = book["sessions"][number]
+    if "baseline" not in binding:
+        latest = [m.id async for m in app.get_chat_history(777000, limit=1)]
+        binding["baseline"] = latest[0] if latest else 0
+    binding["ready"] = True
+    await save()
+    return True
+
+
 async def create(uid, kind, key):
     book = await load()
     if active(book, uid) or uid in pay.transactions:
-        raise ValueError("Masih ada pesanan aktif. Kirim bukti untuk pesanan itu atau batalkan dahulu.")
+        raise ValueError("Masih ada pesanan aktif. Kirim bukti pesanan itu atau batalkan dahulu.")
     if kind == "nk":
         if key not in pay.NOKOS_IDS:
             raise ValueError("ID nokos tidak valid.")
@@ -84,14 +155,41 @@ async def create(uid, kind, key):
         raise ValueError("Produk tidak valid.")
     stock = None
     if kind in ("nk", "nf"):
-        used = {(phone(o.get("stock")) if kind == "nk" else o.get("stock")) for o in book["orders"].values() if o["kind"] == kind and o["state"] != "cancelled"}
+        used = {
+            phone(o.get("stock")) if kind == "nk" else o.get("stock")
+            for o in book["orders"].values()
+            if o["kind"] == kind and o["state"] != "cancelled"
+        }
+        reserved = (
+            {phone(value) for value in pay.reserved_nokos}
+            if kind == "nk" else set(extra.nf_reserved)
+        )
         available = await inventory(kind, key)
-        stock = next((value for value in available if (phone(value) if kind == "nk" else value) not in used and (kind != "nk" or book["sessions"].get(phone(value), {}).get("ready"))), None)
-        if not stock:
-            raise ValueError("Stok siap kirim habis. Nokos wajib sudah didaftarkan session-nya oleh owner.")
+        candidates = [
+            value for value in available
+            if (phone(value) if kind == "nk" else value) not in used | reserved
+        ]
+        if not candidates:
+            raise ValueError("Stok habis atau sedang dipesan pembeli lain.")
+        if kind == "nf":
+            stock = candidates[0]
+        else:
+            for value in candidates:
+                try:
+                    await _ready_nokos(value)
+                    stock = value
+                    break
+                except Exception as error:
+                    logger.warning("Sesi stok belum siap: %s", type(error).__name__)
+            if stock is None:
+                raise ValueError("Stok nomor tersedia, tetapi sesi OTP belum tersambung. Owner perlu memeriksa aktivasi akun stok.")
     oid = token_hex(6)
-    order = {"id": oid, "buyer": uid, "kind": kind, "key": key, "name": name, "amount": amount, "stock": stock,
-             "created": time.time(), "state": "awaiting_photo", "testimoni": TESTIMONI_ID, "invoice_sent": False}
+    order = {
+        "id": oid, "buyer": uid, "kind": kind, "key": key,
+        "name": name, "amount": amount, "stock": stock,
+        "created": time.time(), "state": "awaiting_photo",
+        "testimoni": TESTIMONI_ID, "invoice_sent": False,
+    }
     book["orders"][oid] = order
     await save()
     if kind == "nk":
@@ -258,37 +356,39 @@ async def bind(message):
 
 async def otp(order):
     number = phone(order["stock"])
+    book = await load()
     if order.get("otp_sent") or time.time() > order["delivery_at"] + 600:
         app = _APPS.pop(number, None)
         if app:
             await app.disconnect()
-        if number in _BOOK["sessions"]:
-            del _BOOK["sessions"][number]
+        changed = book["sessions"].pop(number, None) is not None
+        if order.pop("otp_code", None) is not None:
+            changed = True
+        if changed:
             await save()
         return
-    binding = _BOOK["sessions"].get(number)
+    binding = book["sessions"].get(number)
     if not binding:
-        return
-    app = _APPS.get(number)
-    if app is None:
-        app = Client(f"nokos-{number}", api_id=API_ID, api_hash=API_HASH, session_string=binding["session"], in_memory=True)
-        await app.connect()
-        me = await app.get_me()
-        if phone(me.phone_number) != number:
-            await app.disconnect()
-            raise ValueError("Session stok tidak cocok")
-        _APPS[number] = app
+        raise ValueError("Sesi OTP pesanan tidak tersedia.")
+    app = await _nokos_client(number)
     if not order.get("otp_code"):
         messages = [m async for m in app.get_chat_history(777000, limit=10)]
         for message in reversed(messages):
-            text = message.text or ""
-            match = re.search(r"(?i)(?:login code|kode login|kode masuk|telegram code)\D{0,30}(\d{5})\b", text)
-            if message.id > binding["baseline"] and message.date.timestamp() >= order["delivery_at"] and match:
+            match = re.search(
+                r"(?i)(?:login code|kode login|kode masuk|telegram code)\D{0,30}(\d{5})\b",
+                message.text or "",
+            )
+            if (match and message.id > binding.get("baseline", 0)
+                    and message.date.timestamp() >= order["delivery_at"]):
                 order.update(otp_code=match.group(1), otp_message_id=message.id)
                 await save()
                 break
     if order.get("otp_code"):
-        await send(order["buyer"], f"OTP untuk pesanan #{order['id']}: {order['otp_code']}\nJangan bagikan kode ini ke orang lain.", f"{order['id']}:otp")
+        await send(
+            order["buyer"],
+            f"OTP pesanan #{order['id']}: {order['otp_code']}\nJangan bagikan kode ini ke orang lain.",
+            f"{order['id']}:otp",
+        )
         order["otp_sent"] = True
         order.pop("otp_code", None)
         await save()
