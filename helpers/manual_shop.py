@@ -19,6 +19,37 @@ from command import payment_command as pay
 from command import pay_peller as extra
 from logs import logger
 
+RESPON = {
+    "pesanan_aktif": "Masih ada pesanan yang belum selesai. Kirim buktinya atau batalkan dulu, ya.",
+    "id_nokos_salah": "Paket nomornya tidak tersedia.",
+    "produk_salah": "Produknya tidak tersedia.",
+    "stok_habis": "Stoknya habis atau sedang dipesan. Coba lagi nanti, ya.",
+    "nokos_belum_siap": "Nomornya belum bisa dipesan. Coba lagi sebentar atau hubungi admin, ya.",
+    "harga_manual": "Sesuai kesepakatan",
+    "checkout": "Pesanan #{id}\nProduk: {item}\nTotal: {total}\n\nScan QRIS ini, lalu kirim foto bukti pembayarannya. Pesanan berlaku 30 menit.",
+    "checkout_gagal": "Pesanannya belum bisa dibuka. Coba lagi sebentar, ya. Kalau tadi sudah pesan, cek /pesananku.",
+    "bukti_diproses": "Buktinya sedang diproses. Tunggu sebentar, ya.",
+    "pesanan_habis": "Waktu pembayarannya habis. Silakan pesan ulang.",
+    "bukti_dipakai": "Foto ini sudah pernah dikirim. Kirim bukti untuk pesanan yang ini, ya.",
+    "bukti_diterima": "Buktinya sudah diterima. Tunggu pesananmu diproses, ya.",
+    "bukti_admin": "Bukti pembayaran #{id}\nPembeli: {buyer}\nProduk: {item}",
+    "nokos": "Ini nomor kamu: {number}\n\nLogin dalam 10 menit, ya. OTP-nya dikirim lewat bot ini.",
+    "netflix": "Ini akun Netflix kamu:\n{account}\n\nJangan ubah email/password, ya. Ada kendala? Klik Jawab Pesan.",
+    "manual": "Pesanan {item} sedang diproses. Tunggu balasan admin, ya.",
+    "invoice": "🧾 BUKTI PEMBELIAN\n\nPesanan: VIP-{id}\nProduk: {item}\nPembeli: {buyer}\nTotal: {total}\nTanggal: {date}\nStatus: {status}\n\nTerima kasih sudah belanja!",
+    "admin_saja": "Tombol ini khusus admin.",
+    "pesanan_hilang": "Pesanannya tidak ditemukan.",
+    "belum_selesai": "Pesanannya masih diproses. Tunggu sebentar, ya.",
+    "sudah_selesai": "Pesanan ini sudah selesai.",
+    "selesai": "Pesanan selesai. Terima kasih sudah belanja!",
+    "bind_format": "Nomor stok dicocokkan otomatis saat dipesan. Kamu tidak perlu memakai perintah ini.",
+    "bind_belum_aktif": "Nomornya belum aktif. Hubungkan akun stoknya dulu, ya.",
+    "bind_belum_stok": "Tambahkan nomor ini ke stok dulu, ya.",
+    "bind_dipesan": "Nomor ini sudah dipesan atau terjual.",
+    "bind_berhasil": "Nomor stok sudah aktif.",
+    "otp": "Kode OTP pesanan #{id}: {code}\nJangan bagikan kode ini.",
+    "bantuan_owner": "Pesanan #{id} perlu bantuanmu. Coba periksa pesanan ini, ya.",
+}
 LOCK = asyncio.Lock()
 TESTIMONI_ID = LOG_SELLER
 CHAT_KINDS = frozenset({"nf", "st", "tp"})
@@ -175,17 +206,17 @@ async def _ready_nokos(number):
 async def create(uid, kind, key):
     book = await load()
     if active(book, uid) or uid in pay.transactions:
-        raise ValueError("Masih ada pesanan aktif. Kirim bukti pesanan itu atau batalkan dahulu.")
+        raise ValueError(RESPON["pesanan_aktif"])
     if kind == "nk":
         if key not in pay.NOKOS_IDS:
-            raise ValueError("ID nokos tidak valid.")
+            raise ValueError(RESPON["id_nokos_salah"])
         name, amount = f"Nokos {pay.nokos_label(key).strip()}", pay.get_nokos_price(key)
     elif kind in ("nf", "tp", "st"):
         name, amount = extra.item_info(kind, key)
     elif kind == "gc":
         name, amount = "Suntik GC/CH", None
     else:
-        raise ValueError("Produk tidak valid.")
+        raise ValueError(RESPON["produk_salah"])
     stock = None
     if kind in ("nk", "nf"):
         used = {
@@ -203,7 +234,7 @@ async def create(uid, kind, key):
             if (phone(value) if kind == "nk" else value) not in used | reserved
         ]
         if not candidates:
-            raise ValueError("Stok habis atau sedang dipesan pembeli lain.")
+            raise ValueError(RESPON["stok_habis"])
         if kind == "nf":
             stock = candidates[0]
         else:
@@ -215,7 +246,7 @@ async def create(uid, kind, key):
                 except Exception as error:
                     logger.warning("Sesi stok belum siap: %s", type(error).__name__)
             if stock is None:
-                raise ValueError("Stok nomor tersedia, tetapi sesi OTP belum tersambung. Owner perlu memeriksa aktivasi akun stok.")
+                raise ValueError(RESPON["nokos_belum_siap"])
     oid = token_hex(6)
     order = {
         "id": oid, "buyer": uid, "kind": kind, "key": key,
@@ -237,10 +268,8 @@ async def checkout(client, query, kind, key):
         async with LOCK:
             order = await create(query.from_user.id, kind, key)
         await query.answer()
-        amount = "Sesuai kesepakatan dengan owner" if order["amount"] is None else f"Rp{order['amount']:,}".replace(",", ".")
-        caption = (f"Pesanan #{order['id']}\nItem: {order['name']}\nTotal: {amount}\n\n"
-                   "Bayar ke QRIS ini, lalu kirim FOTO bukti ke bot. Pesanan berlaku 30 menit.\n"
-                   "Foto yang diterima log memicu pengiriman tanpa verifikasi dana otomatis.")
+        amount = RESPON["harga_manual"] if order["amount"] is None else f"Rp{order['amount']:,}".replace(",", ".")
+        caption = RESPON["checkout"].format(id=order["id"], item=order["name"], total=amount)
         with tempfile.TemporaryDirectory() as directory:
             path = os.path.join(directory, "qris.png")
             await pay.make_qr_image(CODEQR, path)
@@ -250,7 +279,7 @@ async def checkout(client, query, kind, key):
     except ValueError as error:
         await query.answer(str(error)[:190], show_alert=True)
     except Exception:
-        await client.send_message(query.from_user.id, "Pesanan belum selesai dibuka. Gunakan /pesananku untuk melihat status atau mengirim bukti.")
+        await client.send_message(query.from_user.id, RESPON["checkout_gagal"])
 
 
 async def accept_photo(message):
@@ -260,22 +289,19 @@ async def accept_photo(message):
         if not order:
             return False
         if order["state"] != "awaiting_photo":
-            await message.reply("Bukti sebelumnya sedang diproses.", reply_markup=chat_buyer_buttons(order))
+            await message.reply(RESPON["bukti_diproses"], reply_markup=chat_buyer_buttons(order))
             return True
         if time.time() - order["created"] >= 1800:
             await cancel(order)
-            await message.reply("Pesanan kedaluwarsa. Buat pesanan baru dahulu.")
+            await message.reply(RESPON["pesanan_habis"])
             return True
         unique = message.photo.file_unique_id
         if any(o.get("proof_unique") == unique for o in book["orders"].values()):
-            await message.reply("Foto ini sudah pernah digunakan. Kirim bukti yang sesuai pesanan ini.")
+            await message.reply(RESPON["bukti_dipakai"])
             return True
         order.update(state="proof", proof=message.photo.file_id, proof_unique=unique, proof_at=time.time())
         await save()
-    await message.reply(
-        "Bukti diterima. Tunggu proses pesanan; gunakan Jawab Pesan jika perlu menghubungi admin.",
-        reply_markup=chat_buyer_buttons(order),
-    )
+    await message.reply(RESPON["bukti_diterima"], reply_markup=chat_buyer_buttons(order))
     return True
 
 
@@ -292,8 +318,7 @@ async def fulfil(order):
     oid, uid = order["id"], order["buyer"]
     if order["state"] == "proof":
         result = await send(
-            LOG_SELLER,
-            f"Bukti foto diterima, BELUM verifikasi dana.\nPesanan #{oid}\nBuyer: {uid}\nItem: {order['name']}",
+            LOG_SELLER, RESPON["bukti_admin"].format(id=oid, buyer=uid, item=order["name"]),
             f"{oid}:proof", photo_id=order["proof"], markup=chat_log_buttons(order),
         )
         order["log_message_id"] = _result_message_id(result)
@@ -304,12 +329,12 @@ async def fulfil(order):
     kind = order["kind"]
     if kind == "nk":
         await pay.sell_nokos(order["key"], order["stock"])
-        text = f"Transaksi berhasil.\nItem: {order['name']}\nNomor: {order['stock']}\n\nSilakan login. OTP baru akan dikirim saat diterima akun stok; pemantauan berlaku 10 menit."
+        text = RESPON["nokos"].format(number=order["stock"])
     elif kind == "nf":
         await extra.nf_sell(order["stock"])
-        text = f"Transaksi berhasil.\nItem: {order['name']}\nAkun: {order['stock']}\n\nJangan mengubah email/password. Gunakan Jawab Pesan jika ada kendala."
+        text = RESPON["netflix"].format(account=order["stock"])
     else:
-        text = f"Transaksi berhasil, item yang dibeli {order['name']}. Tunggu owner membalas."
+        text = RESPON["manual"].format(item=order["name"])
     if not order.get("delivery_at"):
         order["delivery_at"] = time.time()
         await save()
@@ -319,19 +344,18 @@ async def fulfil(order):
 
 
 def invoice(order, now=None):
-    timestamp = datetime.fromtimestamp(order.get("delivery_at", order["created"]), pay.waktu_jkt).strftime("%d-%m-%Y %H:%M WIB")
-    amount = "Sesuai kesepakatan owner" if order["amount"] is None else f"Rp{order['amount']:,}".replace(",", ".")
-    status = "Data produk sudah dikirim" if order["state"] == "delivered" else "Menunggu diproses owner"
-    completion = order.get("completed_by")
-    if completion == "owner":
-        status = "Owner menyatakan transaksi selesai"
-    confirmation = "Buyer menekan Transaksi Selesai" if completion == "buyer" else "Owner menekan Transaksi Selesai" if completion else "Belum dikonfirmasi buyer"
-    publication = "Tombol Transaksi Selesai" if completion else "Otomatis setelah 30 menit"
-    masked = str(order["buyer"])[:3] + "***"
-    return (f"🧾 BUKTI PEMBELIAN\n\nID Pesanan : VIP-{order['id'].upper()}\nProduk : {order['name']}\n"
-            f"Pembeli : Buyer #{masked}\nTotal : {amount}\nTanggal : {timestamp}\n\n"
-            f"📦 Status : {status}\n✅ Konfirmasi : {confirmation}\n📌 Publikasi : {publication}\n"
-            "🧾 Dasar pesanan : Foto bukti diterima, bukan verifikasi dana otomatis.\n\nTerima kasih sudah berbelanja!")
+    date = datetime.fromtimestamp(order.get("delivery_at", order["created"]), pay.waktu_jkt).strftime("%d-%m-%Y %H:%M WIB")
+    total = RESPON["harga_manual"] if order["amount"] is None else f"Rp{order['amount']:,}".replace(",", ".")
+    if order.get("completed_by"):
+        status = "Selesai"
+    elif order["state"] == "delivered":
+        status = "Sudah dikirim"
+    else:
+        status = "Sedang diproses admin"
+    return RESPON["invoice"].format(
+        id=order["id"].upper(), item=order["name"], buyer=str(order["buyer"])[:3] + "***",
+        total=total, date=date, status=status,
+    )
 
 
 async def publish(order):
@@ -348,21 +372,21 @@ async def publish(order):
 async def finish(query):
     if (not is_shop_admin(query.from_user.id) or not query.message
             or query.message.chat.id != LOG_SELLER):
-        return await query.answer("Transaksi hanya dapat diselesaikan admin melalui log.", show_alert=True)
+        return await query.answer(RESPON["admin_saja"], show_alert=True)
     oid = query.data.split(":", 1)[1]
     async with LOCK:
         order = (await load())["orders"].get(oid)
         if not order:
-            return await query.answer("Pesanan tidak ditemukan.", show_alert=True)
+            return await query.answer(RESPON["pesanan_hilang"], show_alert=True)
         if order["state"] not in ("delivered", "waiting_owner"):
-            return await query.answer("Pesanan belum berhasil dikirim/dicatat.", show_alert=True)
+            return await query.answer(RESPON["belum_selesai"], show_alert=True)
         if order.get("chat_closed"):
-            return await query.answer("Transaksi sudah diselesaikan.", show_alert=True)
+            return await query.answer(RESPON["sudah_selesai"], show_alert=True)
         order.update(chat_closed=True, completed_by="owner", completed_admin=query.from_user.id,
                      completed_at=time.time(), invoice_due=time.time())
         await save()
         try:
-            await query.answer("Transaksi selesai. Memproses invoice...")
+            await query.answer(RESPON["selesai"])
         except Exception:
             pass
         if not order.get("invoice_sent"):
@@ -381,19 +405,19 @@ async def bind(message):
         return
     parts = message.text.split()
     if len(parts) != 3:
-        return await message.reply("Format: /bindnokos +628xxx USERBOT_ID. Hanya bind akun stok milik sendiri yang sudah login lewat alur pembuatan userbot repo ini.")
+        return await message.reply(RESPON["bind_format"])
     number, uid = phone(parts[1]), int(parts[2])
     from clients import alice
     app = next((a for a in alice._ubot if a.me.id == uid and phone(a.me.phone_number) == number), None)
     if not app:
-        return await message.reply("Userbot stok belum aktif atau nomornya tidak cocok. Login akun stok milikmu dahulu lewat alur pembuatan userbot.")
+        return await message.reply(RESPON["bind_belum_aktif"])
     async with LOCK:
         book = await load()
         stock = [n for key in pay.NOKOS_IDS for n in await pay.get_nokos_list(key)]
         if number not in {phone(n) for n in stock}:
-            return await message.reply("Nomor harus sudah terdaftar di stok nokos.")
+            return await message.reply(RESPON["bind_belum_stok"])
         if any(o["kind"] == "nk" and phone(o.get("stock") or "") == number and o["state"] != "cancelled" for o in book["orders"].values()):
-            return await message.reply("Nomor sudah dipesan atau terjual; tidak dapat diikat ulang.")
+            return await message.reply(RESPON["bind_dipesan"])
         latest = [m.id async for m in app.get_chat_history(777000, limit=1)]
         book["sessions"][number] = {"session": await app.export_session_string(), "baseline": latest[0] if latest else 0, "ready": False}
         await save()
@@ -406,7 +430,7 @@ async def bind(message):
         await dB.set_var(bot.id, "total_users", len(alice._ubot))
         book["sessions"][number]["ready"] = True
         await save()
-    await message.reply("Session stok disimpan privat dan dipisahkan dari userbot umum. OTP hanya diteruskan untuk pesanan nomor tersebut.")
+    await message.reply(RESPON["bind_berhasil"])
 
 
 async def otp(order):
@@ -439,11 +463,7 @@ async def otp(order):
                 await save()
                 break
     if order.get("otp_code"):
-        await send(
-            order["buyer"],
-            f"OTP pesanan #{order['id']}: {order['otp_code']}\nJangan bagikan kode ini ke orang lain.",
-            f"{order['id']}:otp",
-        )
+        await send(order["buyer"], RESPON["otp"].format(id=order["id"], code=order["otp_code"]), f"{order['id']}:otp")
         order["otp_sent"] = True
         order.pop("otp_code", None)
         await save()
@@ -466,9 +486,10 @@ async def worker():
                         if order["state"] == "delivered" and order["kind"] == "nk":
                             await otp(order)
                     except Exception as error:
+                        logger.warning("Pesanan %s gagal pada tahap %s: %s", order["id"], order["state"], type(error).__name__)
                         if not order.get("error_notified"):
                             try:
-                                await bot.send_message(OWNER_ID, f"Pesanan #{order['id']} perlu dicek. Tahap: {order['state']}. Jenis error: {type(error).__name__}. Tidak ada kredensial yang ditampilkan.")
+                                await bot.send_message(OWNER_ID, RESPON["bantuan_owner"].format(id=order["id"]))
                             except Exception:
                                 pass
                             order["error_notified"] = True
