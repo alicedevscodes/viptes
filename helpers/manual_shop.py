@@ -13,7 +13,7 @@ from pyrogram.helpers import ikb
 from pyrogram.enums import ButtonStyle
 from pyrogram.utils import get_input_media_from_file_id
 from clients import bot, alice
-from config import API_ID, API_HASH, CODEQR, LOG_SELLER, OWNER_ID
+from config import API_ID, API_HASH, CODEQR, LOG_SELLER, OWNER_ID, SUDO_OWNERS
 from database import dB
 from command import payment_command as pay
 from command import pay_peller as extra
@@ -21,6 +21,7 @@ from logs import logger
 
 LOCK = asyncio.Lock()
 TESTIMONI_ID = LOG_SELLER
+CHAT_KINDS = frozenset({"nf", "st", "tp"})
 _BOOK = None
 _TASK = None
 _APPS = {}
@@ -59,6 +60,38 @@ def done_button(oid):
     return ikb([
         [("Transaksi Selesai", f"shopdone:{oid}", ButtonStyle.SUCCESS)],
     ])
+
+
+def is_shop_admin(user_id):
+    return user_id == OWNER_ID or user_id in SUDO_OWNERS
+
+
+def chat_buyer_buttons(order):
+    if order["kind"] not in CHAT_KINDS or order.get("chat_closed"):
+        return None
+    return ikb([
+        [("Jawab Pesan", f"shopchat:buyer:{order['id']}", ButtonStyle.SUCCESS)],
+    ])
+
+
+def chat_log_buttons(order):
+    if order["kind"] not in CHAT_KINDS:
+        return done_button(order["id"])
+    return ikb([
+        [("User", f"shopchat:user:{order['id']}", ButtonStyle.PRIMARY), ("Jawab Pesan", f"shopchat:admin:{order['id']}", ButtonStyle.SUCCESS)],
+        [("Transaksi Selesai", f"shopdone:{order['id']}", ButtonStyle.SUCCESS)],
+    ])
+
+
+def _result_message_id(result):
+    direct = getattr(result, "id", None)
+    if isinstance(direct, int):
+        return direct
+    for update in getattr(result, "updates", []) or []:
+        message = getattr(update, "message", None)
+        if isinstance(getattr(message, "id", None), int):
+            return message.id
+    return None
 
 
 def active(book, uid):
@@ -227,7 +260,7 @@ async def accept_photo(message):
         if not order:
             return False
         if order["state"] != "awaiting_photo":
-            await message.reply("Bukti sebelumnya sedang diproses. Tidak perlu kirim ulang.")
+            await message.reply("Bukti sebelumnya sedang diproses.", reply_markup=chat_buyer_buttons(order))
             return True
         if time.time() - order["created"] >= 1800:
             await cancel(order)
@@ -235,11 +268,14 @@ async def accept_photo(message):
             return True
         unique = message.photo.file_unique_id
         if any(o.get("proof_unique") == unique for o in book["orders"].values()):
-            await message.reply("Foto ini sudah pernah dipakai sebagai bukti pesanan. Kirim bukti yang sesuai pesanan ini.")
+            await message.reply("Foto ini sudah pernah digunakan. Kirim bukti yang sesuai pesanan ini.")
             return True
         order.update(state="proof", proof=message.photo.file_id, proof_unique=unique, proof_at=time.time())
         await save()
-    await message.reply("Bukti diterima bot dan sedang diteruskan ke log. Tunggu pengiriman pesanan.")
+    await message.reply(
+        "Bukti diterima. Tunggu proses pesanan; gunakan Jawab Pesan jika perlu menghubungi admin.",
+        reply_markup=chat_buyer_buttons(order),
+    )
     return True
 
 
@@ -255,8 +291,12 @@ async def cancel(order):
 async def fulfil(order):
     oid, uid = order["id"], order["buyer"]
     if order["state"] == "proof":
-        await send(LOG_SELLER, f"Bukti foto diterima, BELUM verifikasi dana.\nPesanan #{oid}\nBuyer: {uid}\nItem: {order['name']}",
-                   f"{oid}:proof", photo_id=order["proof"], markup=done_button(oid))
+        result = await send(
+            LOG_SELLER,
+            f"Bukti foto diterima, BELUM verifikasi dana.\nPesanan #{oid}\nBuyer: {uid}\nItem: {order['name']}",
+            f"{oid}:proof", photo_id=order["proof"], markup=chat_log_buttons(order),
+        )
+        order["log_message_id"] = _result_message_id(result)
         order["state"] = "logged"
         await save()
     if order["state"] != "logged":
@@ -264,16 +304,16 @@ async def fulfil(order):
     kind = order["kind"]
     if kind == "nk":
         await pay.sell_nokos(order["key"], order["stock"])
-        text = f"Transaksi berhasil.\nItem: {order['name']}\nNomor: {order['stock']}\n\nSilakan login. OTP baru akan dikirim bot saat diterima akun stok; pemantauan berlaku 10 menit."
+        text = f"Transaksi berhasil.\nItem: {order['name']}\nNomor: {order['stock']}\n\nSilakan login. OTP baru akan dikirim saat diterima akun stok; pemantauan berlaku 10 menit."
     elif kind == "nf":
         await extra.nf_sell(order["stock"])
-        text = f"Transaksi berhasil.\nItem: {order['name']}\nAkun: {order['stock']}\n\nJangan mengubah email/password akun."
+        text = f"Transaksi berhasil.\nItem: {order['name']}\nAkun: {order['stock']}\n\nJangan mengubah email/password. Gunakan Jawab Pesan jika ada kendala."
     else:
         text = f"Transaksi berhasil, item yang dibeli {order['name']}. Tunggu owner membalas."
     if not order.get("delivery_at"):
         order["delivery_at"] = time.time()
         await save()
-    await send(uid, text, f"{oid}:delivery", markup=done_button(oid))
+    await send(uid, text, f"{oid}:delivery", markup=chat_buyer_buttons(order))
     order.update(state="delivered" if kind in ("nk", "nf") else "waiting_owner", invoice_due=order["delivery_at"] + 1800)
     await save()
 
@@ -306,19 +346,34 @@ async def publish(order):
 
 
 async def finish(query):
+    if (not is_shop_admin(query.from_user.id) or not query.message
+            or query.message.chat.id != LOG_SELLER):
+        return await query.answer("Transaksi hanya dapat diselesaikan admin melalui log.", show_alert=True)
     oid = query.data.split(":", 1)[1]
     async with LOCK:
         order = (await load())["orders"].get(oid)
-        if not order or query.from_user.id not in (order["buyer"], OWNER_ID):
-            return await query.answer("Pesanan ini bukan milikmu.", show_alert=True)
+        if not order:
+            return await query.answer("Pesanan tidak ditemukan.", show_alert=True)
         if order["state"] not in ("delivered", "waiting_owner"):
-            return await query.answer("Pesanan belum berhasil dikirim/dicatat. Tunggu prosesnya.", show_alert=True)
-        if order.get("invoice_sent"):
-            return await query.answer("Invoice sudah dikirim sebelumnya.", show_alert=True)
-        order.setdefault("completed_by", "owner" if query.from_user.id == OWNER_ID else "buyer")
-        order["invoice_due"] = time.time()
+            return await query.answer("Pesanan belum berhasil dikirim/dicatat.", show_alert=True)
+        if order.get("chat_closed"):
+            return await query.answer("Transaksi sudah diselesaikan.", show_alert=True)
+        order.update(chat_closed=True, completed_by="owner", completed_admin=query.from_user.id,
+                     completed_at=time.time(), invoice_due=time.time())
         await save()
-    await query.answer("Transaksi dicatat selesai. Invoice akan dikirim ke testimoni.")
+        try:
+            await query.answer("Transaksi selesai. Memproses invoice...")
+        except Exception:
+            pass
+        if not order.get("invoice_sent"):
+            try:
+                await publish(order)
+            except Exception:
+                logger.exception("Invoice belum terkirim; worker akan mencoba kembali")
+    try:
+        await query.edit_message_reply_markup(reply_markup=None)
+    except Exception:
+        pass
 
 
 async def bind(message):
