@@ -6,15 +6,20 @@ from pyrogram.enums import ParseMode
 from pytz import timezone
 
 from clients import bot
-from command.addubot_command import (
-    buyer_menu,
-    mari_buat_userbot,
-    setExpiredUser,
-    setup_otp_keyboard,
-)
+from command.addubot_command import buyer_menu, mari_buat_userbot, setExpiredUser, setup_otp_keyboard
 from config import AKSES_DEPLOY, OWNER_ID
 from database import dB
 from logs import logger
+
+RESPON = {
+    "format": "Contoh: <code>/aktif 8713820679</code>",
+    "id_salah": "ID akunnya tidak valid.",
+    "aktif_user": "<b>Akses OTP nokos sudah aktif.</b>\n\nID: <code>{id}</code>\nBerlaku sampai: <code>{batas}</code>\n\nKlik tombol di bawah untuk menghubungkan akun Telegram milikmu.",
+    "aktif_owner": "<b>Akses OTP nokos berhasil diaktifkan.</b>\n\nID: <code>{id}</code>\nBerlaku sampai: <code>{batas}</code>",
+    "notif_gagal": "\n\nPemberitahuan belum terkirim. Buka /start dari akun tersebut, ya.",
+    "gagal": "Belum bisa diaktifkan. Coba lagi sebentar, ya.",
+    "menu_gagal": "Menunya belum bisa dibuka. Coba lagi, ya.",
+}
 
 _AKTIF_LOCK = asyncio.Lock()
 _TZ = timezone("Asia/Jakarta")
@@ -27,22 +32,15 @@ _ENTRY_PATTERN = (
 )
 
 
-@bot.on_message(
-    filters.private & filters.user(OWNER_ID) & filters.command("aktif"),
-    group=-40,
-)
+@bot.on_message(filters.private & filters.user(OWNER_ID) & filters.command("aktif"), group=-40)
 async def aktif_handler(client, message):
     try:
         args = message.text.split()
         if len(args) != 2 or not args[1].isdigit():
-            return await message.reply(
-                "Format: <code>/aktif USER_ID</code>\n"
-                "Contoh: <code>/aktif 8713820679</code>",
-                parse_mode=ParseMode.HTML,
-            )
+            return await message.reply(RESPON["format"], parse_mode=ParseMode.HTML)
         user_id = int(args[1])
         if user_id <= 0 or user_id == client.me.id:
-            return await message.reply("ID akun tidak valid.")
+            return await message.reply(RESPON["id_salah"])
         async with _AKTIF_LOCK:
             expired = await dB.get_expired_date(user_id)
             if not expired or expired <= datetime.now(_TZ):
@@ -56,43 +54,23 @@ async def aktif_handler(client, message):
         notified = True
         try:
             await client.send_message(
-                user_id,
-                "<b>✅ Akses database OTP nokos telah diaktifkan.</b>\n\n"
-                f"ID akun stok: <code>{user_id}</code>\n"
-                f"Berlaku sampai: <code>{batas}</code>\n\n"
-                "Silakan lanjutkan setup akun stok milikmu melalui tombol "
-                "di bawah. Proses ini melakukan login Telegram dan "
-                "menautkan sesi akun ke sistem.",
-                parse_mode=ParseMode.HTML,
-                reply_markup=setup_otp_keyboard(),
+                user_id, RESPON["aktif_user"].format(id=user_id, batas=batas),
+                parse_mode=ParseMode.HTML, reply_markup=setup_otp_keyboard(),
             )
         except Exception:
             notified = False
-        text = (
-            "<b>✅ Akses setup OTP nokos berhasil diberikan.</b>\n\n"
-            f"ID akun stok: <code>{user_id}</code>\n"
-            f"Berlaku sampai: <code>{batas}</code>\n\n"
-            "Izin ini khusus persiapan akun stok, bukan untuk buyer."
-        )
+        text = RESPON["aktif_owner"].format(id=user_id, batas=batas)
         if not notified:
-            text += (
-                "\n\nNotifikasi belum terkirim. Akses tetap tersimpan; "
-                "buka /start dari akun stok tersebut terlebih dahulu."
-            )
+            text += RESPON["notif_gagal"]
         await message.reply(text, parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception("Aktivasi akses setup OTP nokos gagal")
-        await message.reply(
-            "Aktivasi belum selesai. Periksa log sebelum mencoba kembali."
-        )
+        await message.reply(RESPON["gagal"])
     finally:
         raise StopPropagation
 
 
-@bot.on_message(
-    filters.private & ~filters.bot & filters.regex(_ENTRY_PATTERN),
-    group=-40,
-)
+@bot.on_message(filters.private & ~filters.bot & filters.regex(_ENTRY_PATTERN), group=-40)
 async def route_buyer_or_setup(client, message):
     try:
         user_id = message.from_user.id
@@ -107,6 +85,6 @@ async def route_buyer_or_setup(client, message):
         return await mari_buat_userbot(client, message)
     except Exception:
         logger.exception("Routing pembelian/setup OTP gagal")
-        await message.reply("Menu belum berhasil dibuka. Silakan coba kembali.")
+        await message.reply(RESPON["menu_gagal"])
     finally:
         raise StopPropagation

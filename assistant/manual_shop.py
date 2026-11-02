@@ -4,6 +4,25 @@ from config import OWNER_ID
 from helpers import manual_shop as shop
 from command import payment_command as pay
 from command import pay_peller as extra
+from logs import logger
+
+RESPON = {
+    "batal_setelah_bukti": "Buktinya sudah diterima. Hubungi admin kalau ingin membatalkan.",
+    "dibatalkan": "Pesanan dibatalkan.",
+    "nomor_gagal": "Nomornya belum bisa diaktifkan. Coba lagi sebentar, ya.",
+    "belum_pesan": "Kamu belum punya pesanan.",
+    "pesanan": "Pesanan #{id}\nProduk: {item}\nStatus: {status}",
+    "stok_dipesan": "Akun ini sedang dipesan, jadi belum bisa dihapus.",
+    "owner_saja": "Tombol ini khusus owner.",
+}
+STATUS_PESANAN = {
+    "awaiting_photo": "Menunggu bukti pembayaran",
+    "proof": "Bukti pembayaran diterima",
+    "logged": "Sedang diproses",
+    "delivered": "Sudah dikirim",
+    "waiting_owner": "Sedang diproses admin",
+    "cancelled": "Dibatalkan",
+}
 
 
 @bot.on_callback_query(filters.regex(r"^(?:buynokos |p2buy |shopdone:|batal_payment$|planusers suntik$)"), group=-30)
@@ -18,9 +37,9 @@ async def checkout_callback(client, query):
                 if not order:
                     raise ContinuePropagation
                 if order["state"] != "awaiting_photo":
-                    return await query.answer("Bukti sudah diterima. Hubungi owner untuk pembatalan/refund.", show_alert=True)
+                    return await query.answer(RESPON["batal_setelah_bukti"], show_alert=True)
                 await shop.cancel(order)
-            return await query.answer("Pesanan dibatalkan.", show_alert=True)
+            return await query.answer(RESPON["dibatalkan"], show_alert=True)
         if data[0] == "buynokos" and len(data) == 2:
             return await shop.checkout(client, query, "nk", data[1])
         if data[0] == "p2buy" and len(data) == 3:
@@ -46,7 +65,8 @@ async def bind_nokos(client, message):
     try:
         await shop.bind(message)
     except Exception as error:
-        await message.reply(f"Bind gagal: {type(error).__name__}. Periksa format dan userbot stok; session tidak ditampilkan.")
+        logger.warning("Bind stok gagal: %s", type(error).__name__)
+        await message.reply(RESPON["nomor_gagal"])
     raise StopPropagation
 
 
@@ -56,7 +76,11 @@ async def my_order(client, message):
         book = await shop.load()
         orders = [o for o in book["orders"].values() if o["buyer"] == message.from_user.id]
         order = orders[-1] if orders else None
-        text = f"Pesanan #{order['id']}\nItem: {order['name']}\nStatus: {order['state']}" if order else "Belum ada pesanan."
+        if order:
+            status = "Selesai" if order.get("chat_closed") or order.get("completed_by") else STATUS_PESANAN.get(order["state"], "Sedang diproses")
+            text = RESPON["pesanan"].format(id=order["id"], item=order["name"], status=status)
+        else:
+            text = RESPON["belum_pesan"]
     await message.reply(text)
     raise StopPropagation
 
@@ -74,7 +98,7 @@ async def stock_mutation(client, message):
         cmd = message.command[0].lower()
         if cmd in ("addnf", "delnf"):
             if cmd == "delnf" and any(value in extra.nf_reserved for value in message.text.split()[1:]):
-                await message.reply("Akun sedang dipesan; tidak boleh dihapus.")
+                await message.reply(RESPON["stok_dipesan"])
             else:
                 await extra.nf_cmd(client, message)
         elif cmd == "addnokos":
@@ -90,6 +114,6 @@ shop.start_worker()
 @bot.on_callback_query(filters.regex(r"^(?:p2nf |p2done |nokos )"), group=-31)
 async def protect_legacy_stock(client, query):
     if query.from_user.id != OWNER_ID:
-        await query.answer("Akses owner saja.", show_alert=True)
+        await query.answer(RESPON["owner_saja"], show_alert=True)
         raise StopPropagation
     raise ContinuePropagation
