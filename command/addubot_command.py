@@ -19,7 +19,7 @@ from plugins import PLUGINS
 
 RESPON = {
     "batal": "Setup dibatalkan. Bisa dilanjutkan nanti, ya.",
-    "menu": "<b>🛒 Menu Pembelian</b>\n\nPilih produk yang ingin kamu beli.",
+    "menu": "<b>🛒 Menu produk ZanStore</b>\n\nPilih produk yang ingin kamu beli.",
     "membuka_menu": "Membuka menu...",
     "sedang_setup": "Setup sebelumnya belum selesai. Lanjutkan dulu atau ketik /cancel.",
     "sudah_aktif": "<b>Nomor stok sudah terhubung.</b>\nCukup tambahkan nomornya ke stok. Tidak perlu login ulang.",
