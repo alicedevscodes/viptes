@@ -39,7 +39,7 @@ async def _(client, message):
     try:
         text = message.text
         if text in [
-            "Beli Seblak Bang",
+            "List Produk",
             "✨ Pembuatan Ulang Userbot",
             "✅ Lanjutkan Buat Userbot",
         ]:
