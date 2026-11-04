@@ -14,7 +14,7 @@ from database import dB
 
 from .emoji_logs import Emoji
 
-trigger = r"^(💬 Jawab Pesan|👤 Akun|❌ Batalkan|Beli Seblak Bang|❓ Status Akun|🔄 Reset Emoji|🔄 Reset Prefix|🔄 Restart Userbot|🔄 Reset Text|🚀 Updates|👥 Cek User|🛠️ Cek Fitur|🤔 Pertanyaan|↩️ Beranda|✨ Pembuatan Ulang Userbot|💬 Hubungi Admins|/copy|/close|/get|/restart|/id|/button|✅ Lanjutkan Buat Userbot|start|restart|/start|🤖 Contoh Kelebihan Userbot|🔑 Token|🧩 Plan Basic|💎 Plan Pro)"
+trigger = r"^(💬 Jawab Pesan|👤 Akun|❌ Batalkan|List Produk|❓ Status Akun|🔄 Reset Emoji|🔄 Reset Prefix|🔄 Restart Userbot|🔄 Reset Text|🚀 Updates|👥 Cek User|🛠️ Cek Fitur|🤔 Pertanyaan|↩️ Beranda|✨ Pembuatan Ulang Userbot|💬 Hubungi Admins|/copy|/close|/get|/restart|/id|/button|✅ Lanjutkan Buat Userbot|start|restart|/start|🤖 Contoh Kelebihan Userbot|🔑 Token|🧩 Plan Basic|💎 Plan Pro)"
 words = trigger.replace("^(", "").replace(")", "").split("|")
 wrapped_words = [f'"{word}"' for word in words]
 no_trigger = "[" + ", ".join(wrapped_words) + "]"
@@ -26,7 +26,7 @@ no_commands = [
     "👤 Akun",
     "Tombol Custom DLL",
     "❌ Batalkan",
-    "Beli Seblak Bang",
+    "List Produk",
     "❓ Status Akun",
     "🔄 Reset Emoji",
     "🔄 Reset Prefix",
