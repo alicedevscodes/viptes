@@ -267,6 +267,10 @@ async def checkout(client, query, kind, key):
     try:
         async with LOCK:
             order = await create(query.from_user.id, kind, key)
+            order["buyer_masked"] = mask_buyer_name(" ".join(filter(None, (
+                query.from_user.first_name, query.from_user.last_name,
+            ))))
+            await save()
         await query.answer()
         amount = RESPON["harga_manual"] if order["amount"] is None else f"Rp{order['amount']:,}".replace(",", ".")
         caption = RESPON["checkout"].format(id=order["id"], item=order["name"], total=amount)
@@ -343,6 +347,20 @@ async def fulfil(order):
     await save()
 
 
+def mask_buyer_name(name):
+    words = str(name or "").split()
+    if not words:
+        return "Anonim"
+    masked = []
+    for word in words:
+        if len(word) == 1:
+            masked.append("*")
+            continue
+        visible = min(4, (len(word) + 1) // 2)
+        masked.append(word[:visible] + "*" * (len(word) - visible))
+    return " ".join(masked)
+
+
 def invoice(order, now=None):
     date = datetime.fromtimestamp(order.get("delivery_at", order["created"]), pay.waktu_jkt).strftime("%d-%m-%Y %H:%M WIB")
     total = RESPON["harga_manual"] if order["amount"] is None else f"Rp{order['amount']:,}".replace(",", ".")
@@ -353,7 +371,7 @@ def invoice(order, now=None):
     else:
         status = "Sedang diproses admin"
     return RESPON["invoice"].format(
-        id=order["id"].upper(), item=order["name"], buyer=str(order["buyer"])[:3] + "***",
+        id=order["id"].upper(), item=order["name"], buyer=order.get("buyer_masked") or "Anonim",
         total=total, date=date, status=status,
     )
 
@@ -361,8 +379,16 @@ def invoice(order, now=None):
 async def publish(order):
     if order.get("invoice_sent"):
         return
-    if "invoice_text" not in order:
+    if not order.get("buyer_masked"):
+        try:
+            buyer = await bot.get_users(order["buyer"])
+            name = " ".join(filter(None, (buyer.first_name, buyer.last_name)))
+            order["buyer_masked"] = mask_buyer_name(name)
+        except Exception:
+            order["buyer_masked"] = "Anonim"
+    if "invoice_text" not in order or not order.get("invoice_masked_name"):
         order["invoice_text"] = invoice(order)
+        order["invoice_masked_name"] = True
         await save()
     await send(order["testimoni"], order["invoice_text"], f"{order['id']}:invoice")
     order["invoice_sent"] = True
