@@ -36,7 +36,7 @@ RESPON = {
     "nokos": "Ini nomor kamu: {number}\n\nLogin dalam 10 menit, ya. OTP-nya dikirim lewat bot ini.",
     "netflix": "Ini akun Netflix kamu:\n{account}\n\nJangan ubah email/password, ya. Ada kendala? Klik Jawab Pesan.",
     "manual": "Pesanan {item} sedang diproses. Tunggu balasan admin, ya.",
-    "invoice": "🧾 BUKTI PEMBELIAN\n\nPesanan: VIP-{id}\nProduk: {item}\nPembeli: {buyer}\nTotal: {total}\nTanggal: {date}\nStatus: {status}\n\nTerima kasih sudah belanja!",
+    "invoice": "🧾 Teatimoni Pembelian\n\nPesanan: VIP-{id}\nProduk: {item}\nPembeli: {buyer}\nTotal: {total}\nTanggal: {date}\nStatus: {status}\n\nTerima kasih sudah belanja!",
     "admin_saja": "Tombol ini khusus admin.",
     "pesanan_hilang": "Pesanannya tidak ditemukan.",
     "belum_selesai": "Pesanannya masih diproses. Tunggu sebentar, ya.",
