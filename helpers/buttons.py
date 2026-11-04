@@ -232,12 +232,8 @@ class ButtonUtils:
         """Generate start menu keyboard."""
         common_buttons = [
         [
-          (("Beli Seblak Bang"), ButtonStyle.PRIMARY, "5373052667671093676"),
+          (("List Produk"), ButtonStyle.PRIMARY, "5373052667671093676"),
         ],
-        [
-          (("Tombol Custom DLL"), ButtonStyle.DANGER, "6240210026477130678"),
-        ],
-          
     ]
 
         if is_admin:
@@ -413,17 +409,7 @@ class ButtonUtils:
             [
                 [
                     (
-                      ((" VIP"), 
-                     f"planusers basic", ButtonStyle.DANGER, "5458908492687497206")
-                    ), 
-                    (
-                      ((" Userbot"),
-                     f"planusers is_pro", ButtonStyle.PRIMARY, "5258397811329739167")
-                    ),
-                ],
-                [
-                    (
-                      ((" beli nokos"),
+                      ((" Nokos"),
                      f"planusers nokos", ButtonStyle.PRIMARY, "5258397811329739167")
                     ),
                 ],
