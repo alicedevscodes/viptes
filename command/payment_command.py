@@ -439,8 +439,7 @@ async def stok_nokos_cmd(client, message):
         numbers = await get_nokos_list(nokos_id)
         total += len(numbers)
         lines.append(
-            f"<b>{I_NOKOS}{nokos_label(nokos_id)}</b>\n"
-            f"<b>{I_PAKET} Stok:</b> <code>{len(numbers)}</code>\n"
+            f"<b>{I_PAKET} Stok:</b> <code>{len(numbers)} {nokos_label(nokos_id)}</code>\n"
             f"<b>{I_NOKOS} Nomor:</b> <code>{', '.join(numbers) if numbers else 'Kosong'}</code>\n"
         )
 
