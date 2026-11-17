@@ -20,7 +20,7 @@ from command.payment_command import (
 )
 
 API_URL = "https://api.gramix.io/api/v1"
-API_KEY = os.getenv("GRAMIX_API_KEY", "7JOMoCTB4kwAmF6eTxFEVlOhu4zXBHp1RwVhcpWOW0A").strip()
+API_KEY = os.getenv("GRAMIX_API_KEY", "").strip()
 CURRENCY = os.getenv("GRAMIX_CURRENCY", "usdt").strip().lower()
 ORDER_VAR = "GRAMIX_STARS_ORDER"
 P, S, D = ButtonStyle.PRIMARY, ButtonStyle.SUCCESS, ButtonStyle.DANGER
@@ -323,6 +323,24 @@ async def checkout(client, query):
         order["message_id"] = sent.id
         await save(uid, order)
         start_monitor(client, uid)
+
+    except CasakuError as error:
+        if not invoice_created:
+            await save(uid, {"state": "canceled"})
+        await tell(
+            client, uid,
+            f"<b>Gagal membuat pembayaran QRIS</b>\n{escape(error.user_message)}"
+            if not invoice_created else
+            "Pembayaran perlu diperiksa. Gunakan /statusstars dan jangan bayar ulang.",
+        )
+        await tell(
+            client, LOG_SELLER,
+            "<b>Detail error Casaku — Checkout Stars</b>\n"
+            f"User: <code>{uid}</code>\n"
+            f"Kode: <code>{escape(str(error.status))}</code>\n"
+            f"Pesan: <code>{escape(str(error.message)[:1200])}</code>\n"
+            f"Casaku: <code>{escape(payment_id or '-')}</code>",
+        )
 
     except ValueError as error:
         if not invoice_created:
