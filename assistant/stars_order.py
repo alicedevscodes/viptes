@@ -1,277 +1,403 @@
 import asyncio
+import hashlib
+import os
 import re
 import time
-from secrets import token_hex
+from html import escape
 
-from pyrogram import ContinuePropagation, StopPropagation, filters
-from pyrogram.enums import ButtonStyle, ChatType
-from pyrogram.helpers import cell, ikb, table
-from pyrogram.types import ForceReply, InputRichMessage
+import httpx
+from pyrogram import StopPropagation, filters
+from pyrogram.enums import ButtonStyle
+from pyrogram.helpers import ikb
 
 from clients import bot
+from config import LOG_SELLER
 from database import dB
-from logs import logger
+from command.payment_command import (
+    QRIS_EXPIRE_MINUTES, CasakuError, PAID_STATUSES,
+    check_status, generate_qris, make_qr_image, transactions,
+    _delete_qr_message, _remove_file,
+)
 
-MIN_STARS = 50
-DRAFT_TTL = 900
-DRAFT_KEY = "STARS_ORDER_DRAFT_V1"
-LOCKS = tuple(asyncio.Lock() for _ in range(64))
-
+API_URL = "https://api.gramix.io/api/v1"
+API_KEY = os.getenv("GRAMIX_API_KEY", "7JOMoCTB4kwAmF6eTxFEVlOhu4zXBHp1RwVhcpWOW0A").strip()
+CURRENCY = os.getenv("GRAMIX_CURRENCY", "usdt").strip().lower()
+ORDER_VAR = "GRAMIX_STARS_ORDER"
 P, S, D = ButtonStyle.PRIMARY, ButtonStyle.SUCCESS, ButtonStyle.DANGER
-USERNAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{3,30}[A-Za-z0-9]")
-OPEN_RE = r"^(?:planusers stars|p2star \d+|p2buy st \d+)$"
-ACTION_RE = r"^starsdraft:(\d+):([a-f0-9]{12}):(save|cancel)$"
+TASKS, LOCKS = {}, {}
+TERMINAL = {"completed", "failed", "canceled", "expired"}
+USERNAME = re.compile(r"[a-z][a-z0-9_]{4,31}")
 
 
-def _lock(user_id):
-    return LOCKS[user_id % len(LOCKS)]
+class GramixError(Exception):
+    def __init__(self, status):
+        self.status = status
+        super().__init__(f"Gramix HTTP {status}")
 
 
-def _rupiah(amount):
-    return f"Rp{amount:,}".replace(",", ".")
+def rupiah(value):
+    return "Rp" + f"{int(value):,}".replace(",", ".")
 
 
-def _price(quantity):
-    if quantity < MIN_STARS:
-        raise ValueError(f"Minimal pembelian {MIN_STARS} Stars.")
-    rate = 286 if quantity <= 500 else 283
-    return rate, quantity * rate
+def lock_for(uid):
+    return LOCKS.setdefault(uid, asyncio.Lock())
 
 
-def _buttons(draft, confirm=False):
-    prefix = f"starsdraft:{draft['buyer']}:{draft['id']}"
-    rows = []
-    if confirm:
-        rows.append([("Simpan Rancangan", f"{prefix}:save", S)])
-    rows.append([("Batalkan", f"{prefix}:cancel", D)])
-    return ikb(rows)
+def price_for(quantity):
+    return quantity * (286 if quantity <= 500 else 283)
 
 
-def _summary_blocks(draft, saved=False):
-    return [
-        table([
-            [cell("PESANAN TELEGRAM STARS", is_header=True),
-             cell("MODE PERSIAPAN", is_header=True)],
-            [cell("Referensi"), cell(f"STARS-{draft['id'].upper()}")],
-            [cell("Tujuan"), cell(f"@{draft['username']}")],
-            [cell("Jumlah"), cell(f"{draft['quantity']:,} Stars")],
-            [cell("Harga / Stars"), cell(_rupiah(draft["rate"]))],
-            [cell("Subtotal"), cell(_rupiah(draft["subtotal"]))],
-            [cell("Status"), cell("Rancangan disimpan" if saved else "Belum dibayar")],
-        ], bordered=True, striped=True, compact=True),
-        table([
-            [cell("Belum ada pembayaran atau pengiriman Stars.")],
-            [cell("Pengiriman otomatis belum dihubungkan.")],
-            [cell("Username baru diperiksa formatnya, belum diverifikasi ke penyedia.")],
-        ], bordered=True, compact=True),
-    ]
+async def save(uid, order):
+    await dB.set_var(uid, ORDER_VAR, order)
 
 
-async def _allowed(user_id):
-    banned = await dB.get_list_from_var(bot.me.id, "BANNED_USERS") or []
-    return user_id not in banned
+async def load(uid):
+    order = await dB.get_var(uid, ORDER_VAR)
+    return order if isinstance(order, dict) else {}
 
 
-async def _load(user_id):
-    draft = await dB.get_var(user_id, DRAFT_KEY)
-    if not isinstance(draft, dict):
-        return None
-    if time.time() >= draft.get("expires", 0):
-        await dB.remove_var(user_id, DRAFT_KEY)
-        return None
-    return draft
+async def tell(client, uid, text):
+    try:
+        await client.send_message(uid, text)
+    except Exception:
+        pass
 
 
-async def _save(draft):
-    await dB.set_var(draft["buyer"], DRAFT_KEY, draft)
-
-
-async def _prompt(client, draft, text):
-    prompt = await client.send_message(
-        draft["buyer"], text, reply_markup=ForceReply(selective=True),
-    )
-    draft["prompt_id"] = prompt.id
-    await _save(draft)
-
-
-async def _send_summary(client, draft, saved=False):
-    return await client.send_rich_message(
-        chat_id=draft["buyer"],
-        rich_message=InputRichMessage(blocks=_summary_blocks(draft, saved)),
-        reply_markup=None if saved else _buttons(draft, confirm=True),
+async def admin(client, uid, order, reason):
+    await tell(
+        client, LOG_SELLER,
+        "<b>Order Stars perlu diperiksa</b>\n"
+        f"User: <code>{uid}</code>\n"
+        f"Tujuan: @{escape(order['recipient'])}\n"
+        f"Jumlah: {order['quantity']:,}\n"
+        f"Casaku: <code>{escape(order.get('payment_id', '-'))}</code>\n"
+        f"Gramix: <code>{escape(order.get('order_id', '-'))}</code>\n"
+        f"Keterangan: {escape(reason)}",
     )
 
 
-@bot.on_callback_query(filters.regex(OPEN_RE), group=-60)
-async def stars_open(client, query):
-    try:
-        user_id = query.from_user.id
-        if not query.message or query.message.chat.type != ChatType.PRIVATE:
-            return await query.answer("Buka layanan ini di chat pribadi bot.", show_alert=True)
-        if query.message.chat.id != user_id or not await _allowed(user_id):
-            return await query.answer("Akses tidak tersedia.", show_alert=True)
-        await query.answer()
-        async with _lock(user_id):
-            draft = await _load(user_id)
-            if draft and draft.get("stage") in {"username", "quantity", "confirm"}:
-                return await client.send_message(
-                    user_id,
-                    "Masih ada rancangan Stars. Lanjutkan atau batalkan dahulu.",
-                    reply_markup=_buttons(draft),
-                )
-            draft = {
-                "id": token_hex(6), "buyer": user_id, "stage": "username",
-                "created": time.time(), "expires": time.time() + DRAFT_TTL,
-            }
-            await _save(draft)
-            await client.send_rich_message(
-                chat_id=user_id,
-                rich_message=InputRichMessage(blocks=[
-                    table([
-                        [cell("BELI TELEGRAM STARS", is_header=True),
-                         cell("HARGA", is_header=True)],
-                        [cell("50–500 Stars"), cell("Rp286 / Stars")],
-                        [cell("501 Stars ke atas"), cell("Rp283 / Stars")],
-                        [cell("Minimal pembelian"), cell("50 Stars")],
-                    ], bordered=True, striped=True, compact=True),
-                    table([
-                        [cell("Mode persiapan: belum menerima pembayaran.")],
-                    ], bordered=True, compact=True),
-                ]),
-                reply_markup=_buttons(draft),
+async def api(method, path, payload=None, key=None):
+    if not API_KEY:
+        raise GramixError(401)
+    headers = {"x-api-key": API_KEY, "Accept": "application/json"}
+    if key:
+        headers["idempotency-key"] = key
+    async with httpx.AsyncClient(timeout=25, follow_redirects=False) as http:
+        response = await http.request(
+            method, API_URL + path, headers=headers, json=payload,
+        )
+    if not response.is_success:
+        raise GramixError(response.status_code)
+    body = response.json()
+    if not isinstance(body, dict) or not isinstance(body.get("data"), dict):
+        raise ValueError("Respons Gramix tidak sesuai dokumentasi")
+    return body["data"]
+
+
+def start_monitor(client, uid):
+    task = TASKS.get(uid)
+    if task and not task.done():
+        return
+    task = asyncio.create_task(monitor(client, uid))
+    TASKS[uid] = task
+
+    def finished(done):
+        if TASKS.get(uid) is done:
+            TASKS.pop(uid, None)
+        if not done.cancelled():
+            done.exception()
+
+    task.add_done_callback(finished)
+
+
+async def monitor(client, uid):
+    notified = False
+    for _ in range(180):
+        try:
+            async with lock_for(uid):
+                order = await load(uid)
+                state = order.get("state")
+                if not order or state in TERMINAL:
+                    return
+
+                if state in {"creating", "review"}:
+                    return
+
+                if state == "awaiting_payment":
+                    result = await check_status(order["payment_id"])
+                    payment = str(result.get("status", "")).strip().lower()
+                    if payment in PAID_STATUSES:
+                        order["state"] = "paid"
+                        await save(uid, order)
+                        transactions.pop(uid, None)
+                        await _delete_qr_message(
+                            client, uid, order.get("message_id", 0),
+                        )
+                        await tell(
+                            client, uid,
+                            "Pembayaran terverifikasi. Pengiriman Stars diproses.",
+                        )
+                    elif payment in {"expired", "cancel", "cancelled", "canceled"}:
+                        order["state"] = "expired"
+                        await save(uid, order)
+                        transactions.pop(uid, None)
+                        await _delete_qr_message(
+                            client, uid, order.get("message_id", 0),
+                        )
+                        await tell(client, uid, "Tagihan kedaluwarsa atau dibatalkan.")
+                        return
+                    elif time.time() > order["check_until"]:
+                        await tell(
+                            client, uid,
+                            "Status pembayaran belum pasti. Jangan bayar ulang. "
+                            "Gunakan /statusstars atau hubungi admin.",
+                        )
+                        return
+
+                if order["state"] in {"paid", "submitting"}:
+                    order["state"] = "submitting"
+                    await save(uid, order)
+                    result = await api(
+                        "POST", "/purchase/stars",
+                        {
+                            "recipientName": order["recipient"],
+                            "paymentCurrency": order["currency"],
+                            "stars": order["quantity"],
+                        },
+                        order["request_key"],
+                    )
+                    order["order_id"] = result["orderId"]
+                    order["state"] = "processing"
+                    await save(uid, order)
+
+                if order["state"] == "processing":
+                    result = await api("GET", f"/orders/{order['order_id']}")
+                    status = result.get("status")
+                    if status in {"completed", "failed", "canceled"}:
+                        order["state"] = status
+                        order["provider_result"] = result
+                        await save(uid, order)
+                        if status == "completed":
+                            text = (
+                                "<b>Stars berhasil dikirim</b>\n"
+                                f"Tujuan: @{order['recipient']}\n"
+                                f"Jumlah: {order['quantity']:,} Stars\n"
+                                f"Harga: {rupiah(order['price'])}\n"
+                                f"Order: <code>{escape(order['order_id'])}</code>"
+                            )
+                            await tell(client, uid, text)
+                            await tell(client, LOG_SELLER, f"Pembeli: {uid}\n{text}")
+                        else:
+                            await tell(
+                                client, uid,
+                                "Pembayaran diterima, tetapi pengiriman tidak berhasil. "
+                                "Admin perlu memeriksa pesanan/refund. Jangan bayar ulang.",
+                            )
+                            await admin(client, uid, order, f"Status Gramix: {status}")
+                        return
+            notified = False
+
+        except GramixError as error:
+            async with lock_for(uid):
+                order = await load(uid)
+                if error.status in {400, 401, 403, 404, 405, 422}:
+                    order["resume_state"] = order.get("state", "paid")
+                    order["state"] = "review"
+                    await save(uid, order)
+                    await tell(
+                        client, uid,
+                        "Pengiriman membutuhkan pemeriksaan admin. "
+                        "Pembayaranmu tetap tercatat; jangan bayar ulang.",
+                    )
+                    await admin(client, uid, order, str(error))
+                    return
+            if not notified:
+                await admin(client, uid, order, str(error))
+                notified = True
+
+        except (httpx.HTTPError, ValueError, KeyError, CasakuError) as error:
+            if not notified:
+                order = await load(uid)
+                if order:
+                    await admin(
+                        client, uid, order,
+                        f"Gangguan sementara: {type(error).__name__}. "
+                        "Status belum dianggap gagal.",
+                    )
+                notified = True
+
+        except asyncio.CancelledError:
+            raise
+
+        except Exception:
+            await tell(
+                client, uid,
+                "Pemantauan terhenti. Gunakan /statusstars untuk melanjutkan. "
+                "Jangan membuat pembayaran ulang.",
             )
-            await _prompt(
-                client, draft,
-                "Masukkan username Telegram tujuan.\n"
-                "Boleh tanpa @, contoh: durov.\n"
-                "Balas pesan ini. Ketik /cancel untuk batal.",
-            )
-    except Exception:
-        logger.exception("Membuka rancangan Stars gagal")
-        if query.message:
-            await query.message.reply("Gagal membuka Stars. Coba lagi.")
-    finally:
-        raise StopPropagation
+            return
+
+        await asyncio.sleep(5)
+
+    await tell(
+        client, uid,
+        "Pesanan belum selesai dipantau. Gunakan /statusstars untuk "
+        "memeriksa dan melanjutkan pesanan yang sama.",
+    )
 
 
-@bot.on_message(filters.private & filters.text & ~filters.bot, group=-60)
-async def stars_input(client, message):
-    if not message.from_user:
-        raise ContinuePropagation
-    user_id = message.from_user.id
-    consumed = False
-    try:
-        async with _lock(user_id):
-            draft = await _load(user_id)
-            if not draft or draft.get("stage") not in {"username", "quantity", "confirm"}:
-                raise ContinuePropagation
-            text = message.text.strip()
-            if text.casefold() in {"/cancel", "/batal"}:
-                consumed = True
-                await dB.remove_var(user_id, DRAFT_KEY)
-                return await message.reply("Rancangan Stars dibatalkan.")
-            if text.startswith("/"):
-                await dB.remove_var(user_id, DRAFT_KEY)
-                raise ContinuePropagation
-            reply = message.reply_to_message
-            if not reply or reply.id != draft.get("prompt_id"):
-                raise ContinuePropagation
-            consumed = True
-            if not await _allowed(user_id):
-                await dB.remove_var(user_id, DRAFT_KEY)
-                return
-            if draft["stage"] == "username":
-                username = text.removeprefix("@")
-                if not USERNAME_RE.fullmatch(username):
-                    return await _prompt(
-                        client, draft,
-                        "Format username tidak valid. Kirim username saja, bukan link.\n"
-                        "Contoh: durov\n/cancel untuk batal.",
-                    )
-                draft.update(username=username, stage="quantity")
-                await _prompt(
-                    client, draft,
-                    f"Tujuan yang kamu tulis: @{username}\n\n"
-                    f"Masukkan jumlah Stars, minimal {MIN_STARS}.\n"
-                    "Gunakan angka saja, contoh: 50.\n/cancel untuk batal.",
-                )
-                return
-            if draft["stage"] == "quantity":
-                if not re.fullmatch(r"[0-9]{1,9}", text):
-                    return await _prompt(
-                        client, draft,
-                        "Kirim jumlah berupa angka saja, tanpa titik atau koma.\n"
-                        "Contoh: 50\n/cancel untuk batal.",
-                    )
-                quantity = int(text)
-                if quantity < MIN_STARS:
-                    return await _prompt(
-                        client, draft,
-                        f"Minimal {MIN_STARS} Stars. Masukkan jumlah lagi.\n/cancel untuk batal.",
-                    )
-                rate, subtotal = _price(quantity)
-                draft.update(
-                    quantity=quantity, rate=rate, subtotal=subtotal,
-                    stage="confirm", expires=time.time() + DRAFT_TTL,
-                )
-                await _save(draft)
-                await _send_summary(client, draft)
-                return
-            await message.reply("Gunakan tombol pada ringkasan atau /cancel.")
-    except ContinuePropagation:
-        raise
-    except Exception:
-        logger.exception("Input rancangan Stars gagal")
-        if consumed:
-            await message.reply("Input belum berhasil diproses. Coba buka Stars lagi.")
-    finally:
-        if consumed:
-            raise StopPropagation
-
-
-@bot.on_callback_query(filters.regex(ACTION_RE), group=-60)
-async def stars_action(client, query):
-    answered = False
-    try:
-        _, owner, draft_id, action = query.data.split(":")
-        user_id = query.from_user.id
-        if (
-            int(owner) != user_id or not query.message
-            or query.message.chat.type != ChatType.PRIVATE
-            or query.message.chat.id != user_id
+async def checkout(client, query):
+    uid = query.from_user.id
+    async with lock_for(uid):
+        current = await load(uid)
+        if uid in transactions or (
+            current and current.get("state") not in TERMINAL
         ):
-            return await query.answer("Tombol ini bukan milikmu.", show_alert=True)
-        if not await _allowed(user_id):
-            return await query.answer("Akses tidak tersedia.", show_alert=True)
-        async with _lock(user_id):
-            draft = await _load(user_id)
-            if not draft or draft.get("id") != draft_id:
-                return await query.answer("Rancangan kedaluwarsa. Buka Stars lagi.", show_alert=True)
-            if action == "cancel":
-                await query.answer("Dibatalkan.")
-                answered = True
-                await dB.remove_var(user_id, DRAFT_KEY)
-                await client.send_message(user_id, "Rancangan Stars dibatalkan.")
-            else:
-                if draft.get("stage") != "confirm":
-                    return await query.answer("Rancangan belum siap atau sudah disimpan.", show_alert=True)
-                await query.answer("Menyimpan rancangan...")
-                answered = True
-                draft.update(stage="saved", saved_at=time.time())
-                await _save(draft)
-                await _send_summary(client, draft, saved=True)
-            try:
-                await query.message.edit_reply_markup(reply_markup=None)
-            except Exception:
-                pass
-    except Exception:
-        logger.exception("Aksi rancangan Stars gagal")
-        if answered:
-            await client.send_message(query.from_user.id, "Aksi belum selesai. Buka Stars untuk mencoba lagi.")
-        else:
-            try:
-                await query.answer("Terjadi kesalahan. Coba lagi.", show_alert=True)
-            except Exception:
-                pass
+            await query.answer("Masih ada pesanan. Gunakan /statusstars.", show_alert=True)
+            return
+        if not API_KEY or CURRENCY not in {"usdt", "gram"}:
+            await query.answer("Konfigurasi Gramix belum siap.", show_alert=True)
+            return
+        await query.answer()
+        await save(uid, {"state": "creating"})
+
+    qr_path = None
+    invoice_created = False
+    payment_id = None
+    order = None
+    try:
+        recipient = await client.ask(
+            uid, "Kirim username penerima, contoh: @username.\nKetik /batal untuk keluar.",
+            filters=filters.text & filters.private & filters.user(uid), timeout=120,
+        )
+        username = (recipient.text or "").strip().lstrip("@").lower()
+        if username == "/batal":
+            raise ValueError("Pembelian dibatalkan.")
+        if not USERNAME.fullmatch(username):
+            raise ValueError("Username tidak valid. Buka menu Stars untuk mencoba lagi.")
+
+        answer = await client.ask(
+            uid,
+            "Masukkan jumlah Stars: 50–1.000.000.\n"
+            "50–500: Rp286/Stars; 501+: Rp283/Stars.\nKetik /batal untuk keluar.",
+            filters=filters.text & filters.private & filters.user(uid), timeout=120,
+        )
+        raw = (answer.text or "").strip()
+        if raw == "/batal":
+            raise ValueError("Pembelian dibatalkan.")
+        if not raw.isascii() or not raw.isdecimal():
+            raise ValueError("Jumlah harus angka bulat tanpa titik atau koma.")
+        quantity = int(raw)
+        if not 50 <= quantity <= 1_000_000:
+            raise ValueError("Jumlah harus antara 50 dan 1.000.000 Stars.")
+
+        await api("GET", "/wallets/balance")
+        price = price_for(quantity)
+        trx = await generate_qris(price, QRIS_EXPIRE_MINUTES)
+        payment_id = str(trx["transactionId"])
+        invoice_created = True
+        minutes = int(trx.get("expiredInMinutes", QRIS_EXPIRE_MINUTES))
+        order = {
+            "state": "awaiting_payment", "recipient": username,
+            "quantity": quantity, "price": price, "currency": CURRENCY,
+            "payment_id": payment_id,
+            "request_key": "stars_" + hashlib.sha256(payment_id.encode()).hexdigest()[:48],
+            "check_until": time.time() + (minutes + 10) * 60,
+        }
+        await save(uid, order)
+        qr_path = f"stars_{uid}_{order['request_key'][-16:]}.png"
+        await make_qr_image(trx["qr_string"], qr_path)
+        sent = await client.send_photo(
+            uid, qr_path,
+            caption=(
+                "<b>Pembayaran Telegram Stars</b>\n"
+                f"Tujuan: @{username}\nJumlah: {quantity:,} Stars\n"
+                f"Harga: {rupiah(price)}\n"
+                f"Total bayar: {rupiah(trx['totalAmount'])}\n"
+                f"Masa berlaku: {minutes} menit\n\n"
+                "Periksa tujuan sebelum membayar. Bayar sesuai total QRIS.\n"
+                "Stars diproses setelah pembayaran terverifikasi.\n"
+                "Cek pesanan: /statusstars"
+            ),
+        )
+        order["message_id"] = sent.id
+        await save(uid, order)
+        start_monitor(client, uid)
+
+    except ValueError as error:
+        if not invoice_created:
+            await save(uid, {"state": "canceled"})
+        await tell(
+            client, uid,
+            "Respons layanan perlu diperiksa. Gunakan /statusstars."
+            if invoice_created else escape(str(error)),
+        )
+
+    except Exception as error:
+        if not invoice_created:
+            await save(uid, {"state": "canceled"})
+        await tell(
+            client, uid,
+            "Tidak bisa menampilkan tagihan. Gunakan /statusstars; jangan bayar "
+            "tagihan lain jika sudah menerima QRIS."
+            if invoice_created else
+            "Pesanan belum dapat dimulai. Coba lagi atau hubungi admin.",
+        )
+        await tell(
+            client, LOG_SELLER,
+            f"Checkout Stars user {uid}: {type(error).__name__}. "
+            f"Casaku: {escape(payment_id or '-')}",
+        )
+
+    finally:
+        _remove_file(qr_path)
+        if invoice_created and order:
+            start_monitor(client, uid)
+
+
+@bot.on_callback_query(
+    filters.regex(r"^(?:planusers stars|p2star(?: .*)?|p2buy st .*)$"),
+    group=-50,
+)
+async def stars_menu(client, query):
+    try:
+        await checkout(client, query)
     finally:
         raise StopPropagation
+
+
+@bot.on_message(filters.private & filters.command("statusstars"), group=-50)
+async def stars_status(client, message):
+    uid = message.from_user.id
+    order = await load(uid)
+    labels = {
+        "creating": "Sedang mengisi pesanan",
+        "awaiting_payment": "Menunggu konfirmasi pembayaran",
+        "paid": "Pembayaran diterima",
+        "submitting": "Mengonfirmasi permintaan ke Gramix",
+        "processing": "Pengiriman diproses",
+        "review": "Perlu pemeriksaan admin",
+        "completed": "Stars berhasil dikirim",
+        "failed": "Pengiriman gagal; hubungi admin",
+        "canceled": "Dibatalkan",
+        "expired": "Tagihan kedaluwarsa",
+    }
+    if not order:
+        await message.reply("Belum ada pesanan Stars.")
+    else:
+        state = order.get("state", "")
+        text = f"Status: {labels.get(state, state)}"
+        if order.get("recipient"):
+            text += (
+                f"\nTujuan: @{order['recipient']}"
+                f"\nJumlah: {order['quantity']:,} Stars"
+                f"\nHarga: {rupiah(order['price'])}"
+            )
+        if order.get("payment_id"):
+            text += f"\nCasaku: <code>{escape(order['payment_id'])}</code>"
+        if order.get("order_id"):
+            text += f"\nGramix: <code>{escape(order['order_id'])}</code>"
+        await message.reply(text)
+        if state not in TERMINAL and state not in {"creating", "review"}:
+            start_monitor(client, uid)
+    raise StopPropagation
