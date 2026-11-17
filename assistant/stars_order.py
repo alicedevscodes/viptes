@@ -20,7 +20,7 @@ from command.payment_command import (
 )
 
 API_URL = "https://api.gramix.io/api/v1"
-API_KEY = os.getenv("GRAMIX_API_KEY", "").strip()
+API_KEY = os.getenv("GRAMIX_API_KEY", "7JOMoCTB4kwAmF6eTxFEVlOhu4zXBHp1RwVhcpWOW0A").strip()
 CURRENCY = os.getenv("GRAMIX_CURRENCY", "usdt").strip().lower()
 ORDER_VAR = "GRAMIX_STARS_ORDER"
 P, S, D = ButtonStyle.PRIMARY, ButtonStyle.SUCCESS, ButtonStyle.DANGER
