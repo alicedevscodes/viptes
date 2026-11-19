@@ -435,33 +435,35 @@ async def stok_nokos_cmd(client, message):
     if not user or user.id != OWNER_ID:
         return await message.reply("<b>Perintah ini hanya untuk Owner.</b>")
 
+    masuk, belum = [], []
     async with shop.LOCK:
         sessions = (await shop.load()).get("sessions") or {}
-        stok = [(nokos_id, await get_nokos_list(nokos_id)) for nokos_id in NOKOS_IDS]
+        for nokos_id in NOKOS_IDS:
+            label = nokos_label(nokos_id).strip()
+            for nomor in await get_nokos_list(nokos_id):
+                binding = sessions.get(shop.phone(nomor)) or {}
+                if not binding.get("session"):
+                    belum.append([cell(nomor), cell(label)])
+                    continue
 
-    blocks = [heading("STOK NOKOS", 3)]
-    total = 0
-    for nokos_id, numbers in stok:
-        masuk, belum = [], []
-        for nomor in numbers:
-            binding = sessions.get(shop.phone(nomor)) or {}
-            if binding.get("session"):
-                masuk.append([cell(nomor), cell("Masuk Sesi"), cell(str(binding.get("account_id") or "—"))])
-            else:
-                belum.append([cell(nomor), cell("Belum Masuk Sesi"), cell("—")])
+                akun_id = str(binding.get("account_id") or "—")
+                status = "Active" if binding.get("ready") else "Unactive"
+                masuk.append([cell(nomor), cell(label), cell(akun_id), cell(status)])
 
-        label = nokos_label(nokos_id).strip()
-        total += len(numbers)
-        blocks.extend((
-            heading(f"{label} · Stok: {len(numbers)}", 3),
-            table([
-                [cell("Nomor", is_header=True), cell("Status Sesi", is_header=True), cell("ID Akun", is_header=True)],
-                *(masuk + belum or [[cell("Kosong"), cell("—"), cell("—")]]),
-            ], bordered=True, striped=True, compact=True),
-        ))
-
-    blocks.extend((divider(), table([[cell(f"Total Stok: {total}", is_header=True)]], bordered=True, compact=True)))
-    return await send_rich(client, message.chat.id, *blocks)
+    return await send_rich(
+        client, message.chat.id,
+        heading("STOK NOKOS", 3),
+        table([
+            [cell("Nomor", is_header=True), cell("ID", is_header=True), cell("ID Akun", is_header=True), cell("Sesi Aktif", is_header=True)],
+            *(masuk or [[cell("Kosong"), cell("—"), cell("—"), cell("—")]]),
+        ], bordered=True, striped=True, compact=True),
+        table([
+            [cell("Belum Masuk Sesi", is_header=True), cell("ID", is_header=True)],
+            *(belum or [[cell("Kosong"), cell("—")]]),
+        ], bordered=True, striped=True, compact=True),
+        divider(),
+        table([[cell(f"Total Stok: {len(masuk) + len(belum)}", is_header=True)]], bordered=True, compact=True),
+    )
 
 
 async def kirim_nomor_nokos(client, user_id, nokos_id, number):
