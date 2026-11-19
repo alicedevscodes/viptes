@@ -452,8 +452,8 @@ async def stok_nokos_cmd(client, message):
 
     return await send_rich(
         client, message.chat.id,
-        heading("STOK NOKOS", 3),
         table([
+            [cell("DATA STOK NOKOS", is_header=True, align=center)],
             [cell("Nomor", is_header=True), cell("ID", is_header=True), cell("ID Akun", is_header=True), cell("Sesi Aktif", is_header=True)],
             *(masuk or [[cell("Kosong"), cell("—"), cell("—"), cell("—")]]),
         ], bordered=True, striped=True, compact=True),
