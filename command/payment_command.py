@@ -18,16 +18,7 @@ import qrcode
 from dateutil.relativedelta import relativedelta
 from pyrogram import filters, enums
 from pyrogram.enums import ButtonStyle
-from pyrogram.helpers import (send_rich,
-    paragraph,
-    heading,
-    divider,
-    center,
-    footer,
-    table,
-    cell,
-    ikb
-)
+from pyrogram.helpers import cell, divider, footer, heading, ikb, paragraph, send_rich, table
 from pyrogram.types import (InlineKeyboardButton, InlineKeyboardMarkup,
                             KeyboardButton, ReplyKeyboardMarkup,
                             ReplyKeyboardRemove)
@@ -454,7 +445,7 @@ async def stok_nokos_cmd(client, message):
     return await send_rich(
         client, message.chat.id,
         table([
-            [cell("DATA STOK NOKOS", is_header=True, align=center)],
+            [cell("DATA STOK NOKOS", is_header=True, align="center", colspan=4)],
             [cell("Nomor", is_header=True), cell("ID", is_header=True), cell("ID Akun", is_header=True), cell("Sesi Aktif", is_header=True)],
             *(masuk or [[cell("Kosong"), cell("—"), cell("—"), cell("—")]]),
         ], bordered=True, striped=True, compact=True),
