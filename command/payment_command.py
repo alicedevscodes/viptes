@@ -429,24 +429,40 @@ async def hapus_nokos_cmd(client, message):
     await message.reply("" + "\n".join(lines))
 
 async def stok_nokos_cmd(client, message):
-    user_id = message.from_user.id
-    if user_id != OWNER_ID:
-        return await message.reply("<b>❌ Perintah ini hanya untuk Owner.</b>")
+    from helpers import manual_shop as shop
 
-    lines = []
-    total = 0
-    for nokos_id in NOKOS_IDS:
-        numbers = await get_nokos_list(nokos_id)
-        total += len(numbers)
-        lines.append(
-            f"<b>{I_PAKET} Stok:</b> <code>{len(numbers)} {nokos_label(nokos_id)}</code>\n"
-            f"<b>{I_NOKOS} Nomor:</b> <code>{', '.join(numbers) if numbers else 'Kosong'}</code>\n"
-        )
+    user = message.from_user
+    if not user or user.id != OWNER_ID:
+        return await message.reply("<b>Perintah ini hanya untuk Owner.</b>")
 
-    await message.reply(
-        f"<b>{I_PAKET} Stok Nokos</b>\n\n"
-        + "".join(lines)
-        + f"\n<b>{I_PAKET} Total semua stok:</b> <code>{total}</code>"
+    masuk_sesi, belum_masuk_sesi = [], []
+    async with shop.LOCK:
+        sessions = (await shop.load()).get("sessions", {})
+        for nokos_id in NOKOS_IDS:
+            label = nokos_label(nokos_id).strip()
+            for nomor in await get_nokos_list(nokos_id):
+                binding = sessions.get(shop.phone(nomor)) or {}
+                if binding.get("session"):
+                    akun_id = binding.get("account_id")
+                    masuk_sesi.append([cell(nomor), cell(label), cell(str(akun_id) if akun_id else "—")])
+                else:
+                    belum_masuk_sesi.append([cell(nomor), cell(label)])
+
+    total = len(masuk_sesi) + len(belum_masuk_sesi)
+    return await send_rich(
+        client, user.id,
+        heading("STOK NOKOS", 3),
+        table([
+            [cell("Nomor", is_header=True), cell("ID", is_header=True), cell("ID Akun", is_header=True)],
+            *(masuk_sesi or [[cell("Kosong"), cell("—"), cell("—")]]),
+        ], bordered=True, striped=True, compact=True),
+        table([[cell("Belum Masuk Sesi", is_header=True, align="center")]], bordered=True, compact=True),
+        table([
+            [cell("Nomor", is_header=True), cell("ID", is_header=True)],
+            *(belum_masuk_sesi or [[cell("Kosong"), cell("—")]]),
+        ], bordered=True, striped=True, compact=True),
+        divider(),
+        table([[cell(f"Total Stok: {total}", is_header=True)]], bordered=True, compact=True),
     )
 
 
